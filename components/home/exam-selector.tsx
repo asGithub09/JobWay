@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -33,7 +33,7 @@ type CardData = {
 type CategoryData = {
   id: CategoryId;
   label: string;
-  image: string;
+  image?: string;
   cards: CardData[];
 };
 
@@ -41,52 +41,52 @@ const CATEGORIES: CategoryData[] = [
   {
     id: "government",
     label: "Government Jobs",
-    image: "/images/category/tab-govt.webp",
+    
     cards: [
       {
         title: "Banking Exams",
         description:
-          "SBI • IBPS • RRB • RBI • NABARD • JAIIB • CAIIB Exams",
+          "SBI â€¢ IBPS â€¢ RRB â€¢ RBI â€¢ NABARD â€¢ JAIIB â€¢ CAIIB Exams",
         href: "/exams?category=Banking%20Exams",
         featured: true,
-        image: "/images/category/banking.webp",
+        
       },
       {
         title: "SSC & Railway Exams",
         description:
-          "SSC CGL • CHSL • Railways • Other SSC • Police Exams",
+          "SSC CGL â€¢ CHSL â€¢ Railways â€¢ Other SSC â€¢ Police Exams",
         href: "/exams?category=SSC%20%26%20Railway",
         featured: true,
-        image: "/images/category/ssc-railway.webp",
+        
       },
       {
         title: "Agri & Food Science",
         description:
-          "IBPS AFO • FSSAI • FCI • ICAR UG/PG • ASRB NET • Semester",
+          "IBPS AFO â€¢ FSSAI â€¢ FCI â€¢ ICAR UG/PG â€¢ ASRB NET â€¢ Semester",
         href: "/exams?category=Agri%20%26%20Food%20Science",
       },
       {
         title: "Engineering Exams",
         description:
-          "SSC JE • RRB JE • GATE • State & Central JE/AE Exams",
+          "SSC JE â€¢ RRB JE â€¢ GATE â€¢ State & Central JE/AE Exams",
         href: "/exams?category=Engineering",
       },
       {
         title: "State Exams",
         description:
-          "State PSC • Other State Level Exams",
+          "State PSC â€¢ Other State Level Exams",
         href: "/exams?category=State%20Exams",
       },
       {
         title: "Teaching, UGC, CSIR",
         description:
-          "UGC NET • TET • TGT • PGT • CSIR NET • GATE",
+          "UGC NET â€¢ TET â€¢ TGT â€¢ PGT â€¢ CSIR NET â€¢ GATE",
         href: "/exams?category=Teaching",
       },
       {
         title: "Nursing & Pharma Exams",
         description:
-          "Nursing • PHARMA • Nursing Entrance",
+          "Nursing â€¢ PHARMA â€¢ Nursing Entrance",
         href: "/exams?category=Nursing%20%26%20Pharma",
       },
     ],
@@ -95,15 +95,15 @@ const CATEGORIES: CategoryData[] = [
   {
     id: "college",
     label: "College Entrance Exams",
-    image: "/images/category/tab-ugpg.webp",
+    
     cards: [
       {
         title: "UG & PG Entrance Exams",
         description:
-          "Class 11, 12 & CUET UG Science • Commerce • Humanities • CUET PG • LAW Entrance • NEET Counselling • Study Offline",
+          "Class 11, 12 & CUET UG Science â€¢ Commerce â€¢ Humanities â€¢ CUET PG â€¢ LAW Entrance â€¢ NEET Counselling â€¢ Study Offline",
         href: "/exams?category=College%20Entrance",
         featured: true,
-        image: "/images/category/college-entrance.webp",
+        
       },
     ],
   },
@@ -111,23 +111,23 @@ const CATEGORIES: CategoryData[] = [
   {
     id: "private",
     label: "Private Jobs & Upskilling",
-    image: "/images/category/tab-pvt.webp",
+    
     cards: [
       {
         title: "Private Bank Jobs",
         description:
-          "Axis Bank • Kotak Bank",
+          "Axis Bank â€¢ Kotak Bank",
         href: "/search?searchTerm=Private%20Bank%20Jobs&primaryFilter=true",
         featured: true,
-        image: "/images/category/private-bank.webp",
+        
       },
       {
         title: "AI & Tech Jobs",
         description:
-          "Data Analytics • Gen AI • Digital Marketing • Data Science • Full Stack Development • Business Analytics • Cyber Security",
+          "Data Analytics â€¢ Gen AI â€¢ Digital Marketing â€¢ Data Science â€¢ Full Stack Development â€¢ Business Analytics â€¢ Cyber Security",
         href: "/search?searchTerm=AI%20%26%20Tech%20Jobs&primaryFilter=true",
         featured: true,
-        image: "/images/category/ai-tech.webp",
+        
       },
       {
         title: "Campus Programs",
@@ -141,28 +141,28 @@ const CATEGORIES: CategoryData[] = [
   {
     id: "upsc",
     label: "UPSC, PSC & Judiciary",
-    image: "/images/category/tab-studyiq.webp",
+    
     cards: [
       {
         title: "UPSC Civil Services",
         description:
-          "UPSC CSE • IAS • Civil Services Examination • Prelims • Mains",
+          "UPSC CSE â€¢ IAS â€¢ Civil Services Examination â€¢ Prelims â€¢ Mains",
         href: "/exams?category=UPSC",
         featured: true,
-        image: "/images/category/upsc.webp",
+        
       },
       {
         title: "State PSC Exams",
         description:
-          "State PSC • PCS • State Civil Services • Government Recruitment",
+          "State PSC â€¢ PCS â€¢ State Civil Services â€¢ Government Recruitment",
         href: "/exams?category=State%20PSC",
         featured: true,
-        image: "/images/category/state-psc.webp",
+        
       },
       {
         title: "Judiciary Exams",
         description:
-          "Judicial Services • Civil Judge • Law Entrance & Judiciary Preparation",
+          "Judicial Services â€¢ Civil Judge â€¢ Law Entrance & Judiciary Preparation",
         href: "/exams?category=Judiciary",
       },
     ],
@@ -702,3 +702,5 @@ export function ExamSelector() {
     </section>
   );
 }
+
+

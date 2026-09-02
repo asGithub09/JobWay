@@ -1,22 +1,27 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
+import {
+  FileText,
+  Layers3,
+  Target,
+} from "lucide-react";
 
 import "./test-prime.css";
 
 const BENEFITS = [
   {
-    icon: "/images/homepage-revamp/testprime/icon-mocktests.svg",
+    icon: Layers3,
     title: "1.5 Lakh+ Mock Tests",
     description: "Covering SSC, Banking, UPSC, Railways & more",
   },
   {
-    icon: "/images/homepage-revamp/testprime/icon-pyp.svg",
+    icon: FileText,
     title: "2,500+ Previous Year Papers",
     description: "Learn from previous year question papers",
   },
   {
-    icon: "/images/homepage-revamp/testprime/icon-coverage.svg",
+    icon: Target,
     title: "600+ Exam Coverage",
     description: "One subscription, every exam you're targeting",
   },
@@ -29,7 +34,6 @@ export function TestPrime() {
       data-testid="test-prime-banner"
       aria-labelledby="test-prime-heading"
     >
-      {/* Subtle background grid */}
       <div
         className="jobway-testprime-grid"
         aria-hidden="true"
@@ -44,11 +48,12 @@ export function TestPrime() {
               Test
             </span>
 
-            <img
-              src="/images/homepage-revamp/testprime/prime-wordmark.svg"
-              alt="Prime"
+            <span
               className="jobway-testprime-wordmark-logo"
-            />
+              aria-label="Prime"
+            >
+              Prime
+            </span>
           </div>
 
           {/* Main heading */}
@@ -65,31 +70,35 @@ export function TestPrime() {
 
           {/* Benefits */}
           <div className="jobway-testprime-benefits">
-            {BENEFITS.map((benefit) => (
-              <div
-                key={benefit.title}
-                className="jobway-testprime-benefit"
-              >
-                <span className="jobway-testprime-benefit-icon">
-                  <img
-                    src={benefit.icon}
-                    alt=""
-                    width={24}
-                    height={24}
-                  />
-                </span>
+            {BENEFITS.map((benefit) => {
+              const Icon = benefit.icon;
 
-                <div className="jobway-testprime-benefit-text">
-                  <span className="jobway-testprime-benefit-title">
-                    {benefit.title}
+              return (
+                <div
+                  key={benefit.title}
+                  className="jobway-testprime-benefit"
+                >
+                  <span className="jobway-testprime-benefit-icon">
+                    <Icon
+                      aria-hidden="true"
+                      width={24}
+                      height={24}
+                      strokeWidth={2.2}
+                    />
                   </span>
 
-                  <span className="jobway-testprime-benefit-sub">
-                    {benefit.description}
-                  </span>
+                  <div className="jobway-testprime-benefit-text">
+                    <span className="jobway-testprime-benefit-title">
+                      {benefit.title}
+                    </span>
+
+                    <span className="jobway-testprime-benefit-sub">
+                      {benefit.description}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* CTA */}
@@ -105,8 +114,8 @@ export function TestPrime() {
         {/* RIGHT IMAGE */}
         <div className="jobway-testprime-hero-wrap">
           <img
-src="/images/homepage-revamp/testprime/hero-cluster.png"
-alt="Test Prime — mock tests and exam preparation"
+            src="/images/homepage-revamp/testprime/hero-cluster.png"
+            alt="Test Prime — mock tests and exam preparation"
             className="jobway-testprime-hero"
             data-testid="tp-hero"
           />

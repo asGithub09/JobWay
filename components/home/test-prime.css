@@ -101,12 +101,19 @@
 }
 
 .jobway-testprime-wordmark-logo {
-  display: block;
+  display: inline-flex;
+  align-items: center;
 
-  width: auto;
   height: 22px;
 
-  object-fit: contain;
+  color: #e13032;
+
+  font-size: 21px;
+  line-height: 1;
+
+  font-weight: 900;
+
+  letter-spacing: -0.055em;
 }
 
 /* =========================================
@@ -395,8 +402,9 @@
   }
 
   .jobway-testprime-wordmark-logo {
-    height: 20px;
-  }
+  height: 20px;
+  font-size: 19px;
+}
 
   .jobway-testprime-title {
     margin-top: 14px;
