@@ -1,50 +1,21 @@
-﻿const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://127.0.0.1:5000/api";
+﻿/*
+ * JobWay Frontend API Layer
+ *
+ * IMPORTANT:
+ * The dedicated JobWay backend has not been created yet.
+ *
+ * These functions intentionally do NOT connect to the old OJDV backend.
+ * They provide the interface required by the existing authentication UI.
+ *
+ * When the new JobWay backend is created, these functions will be connected
+ * to the new backend without requiring the authentication pages themselves
+ * to be rewritten.
+ */
 
 type ApiError = Error & {
   status?: number;
   code?: string;
 };
-
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> {
-  const response = await fetch(
-    `${API_BASE_URL}${endpoint}`,
-    {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {}),
-      },
-      credentials: "include",
-    },
-  );
-
-  const data = await response.json().catch(() => ({
-    success: false,
-    message: "Invalid server response.",
-  }));
-
-  if (!response.ok) {
-    const error = new Error(
-      data.message || "Request failed.",
-    ) as ApiError;
-
-    error.status = response.status;
-    error.code = data.code;
-
-    throw error;
-  }
-
-  return data as T;
-}
-
-/* =========================
-   AUTH
-========================= */
 
 export type RegisterPayload = {
   name: string;
@@ -83,82 +54,26 @@ export type AuthResponse = {
   [key: string]: unknown;
 };
 
-export function register(
-  payload: RegisterPayload,
-) {
-  return request<AuthResponse>(
-    "/auth/register",
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
-  );
+function backendNotConfigured(): never {
+  const error = new Error(
+    "JobWay backend is not connected yet. Authentication will be enabled when the dedicated JobWay backend is created.",
+  ) as ApiError;
+
+  error.code = "BACKEND_NOT_CONFIGURED";
+
+  throw error;
+}
+
+export function register(_payload: RegisterPayload): Promise<AuthResponse> {
+  return Promise.reject(backendNotConfigured());
 }
 
 export function verifyEmail(
-  payload: VerifyEmailPayload,
-) {
-  return request<AuthResponse>(
-    "/auth/verify-email",
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
-  );
+  _payload: VerifyEmailPayload,
+): Promise<AuthResponse> {
+  return Promise.reject(backendNotConfigured());
 }
 
-export function login(
-  payload: LoginPayload,
-) {
-  return request<AuthResponse>(
-    "/auth/login",
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
-  );
-}
-
-/* =========================
-   COURSES
-========================= */
-
-export type CourseFaculty = {
-  _id?: string;
-  id?: string;
-  name?: string;
-  designation?: string;
-  profileImage?: string;
-};
-
-export type Course = {
-  _id?: string;
-  id?: string;
-  title?: string;
-  slug?: string;
-  shortDescription?: string;
-  description?: string;
-  category?: string;
-  thumbnailUrl?: string;
-  faculty?: CourseFaculty[];
-  language?: string;
-  level?: string;
-  duration?: string;
-  validity?: string;
-  price?: number;
-  discountedPrice?: number;
-  isFeatured?: boolean;
-  featured?: boolean;
-  status?: string;
-  [key: string]: unknown;
-};
-
-export type CoursesResponse = {
-  success?: boolean;
-  courses?: Course[];
-  message?: string;
-};
-
-export function getCourses() {
-  return request<CoursesResponse>("/courses");
+export function login(_payload: LoginPayload): Promise<AuthResponse> {
+  return Promise.reject(backendNotConfigured());
 }
