@@ -1,0 +1,471 @@
+﻿.jobway-testprime {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+
+  background: #ffffff;
+
+  padding: 54px 0 58px;
+}
+
+/* =========================================
+   BACKGROUND GRID
+========================================= */
+
+.jobway-testprime-grid {
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  background-image:
+    linear-gradient(
+      rgba(15, 23, 42, 0.035) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(15, 23, 42, 0.035) 1px,
+      transparent 1px
+    );
+
+  background-size: 34px 34px;
+
+  opacity: 0.75;
+}
+
+/* =========================================
+   MAIN CONTAINER
+========================================= */
+
+.jobway-testprime-inner {
+  position: relative;
+  z-index: 1;
+
+  width: min(
+    1120px,
+    calc(100% - 48px)
+  );
+
+  min-height: 450px;
+
+  margin: 0 auto;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+
+  align-items: center;
+
+  column-gap: 35px;
+}
+
+/* =========================================
+   LEFT CONTENT
+========================================= */
+
+.jobway-testprime-content {
+  position: relative;
+  z-index: 2;
+
+  max-width: 550px;
+}
+
+/* =========================================
+   TEST PRIME WORDMARK
+========================================= */
+
+.jobway-testprime-wordmark {
+  display: flex;
+  align-items: center;
+
+  width: fit-content;
+  height: 32px;
+
+  gap: 4px;
+}
+
+.jobway-testprime-wordmark-text {
+  display: inline-block;
+
+  color: #151515;
+
+  font-size: 18px;
+  line-height: 1;
+
+  font-weight: 800;
+
+  letter-spacing: -0.035em;
+}
+
+.jobway-testprime-wordmark-logo {
+  display: block;
+
+  width: auto;
+  height: 22px;
+
+  object-fit: contain;
+}
+
+/* =========================================
+   HEADING
+========================================= */
+
+.jobway-testprime-title {
+  margin: 17px 0 25px;
+
+  max-width: 545px;
+
+  color: #111111;
+
+  font-size: clamp(
+    32px,
+    3.05vw,
+    40px
+  );
+
+  line-height: 1.16;
+
+  font-weight: 700;
+
+  letter-spacing: -0.035em;
+}
+
+.jobway-testprime-title-highlight {
+  color: #e13032;
+
+  font-weight: 700;
+}
+
+/* =========================================
+   BENEFITS
+========================================= */
+
+.jobway-testprime-benefits {
+  display: flex;
+  flex-direction: column;
+
+  gap: 18px;
+}
+
+.jobway-testprime-benefit {
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+}
+
+.jobway-testprime-benefit-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 46px;
+  height: 46px;
+
+  flex: 0 0 46px;
+
+  border-radius: 9px;
+
+  background: #fff0f0;
+}
+
+.jobway-testprime-benefit-icon img {
+  display: block;
+
+  width: 24px;
+  height: 24px;
+
+  object-fit: contain;
+}
+
+.jobway-testprime-benefit-text {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  gap: 3px;
+}
+
+.jobway-testprime-benefit-title {
+  color: #171717;
+
+  font-size: 13px;
+  line-height: 1.25;
+
+  font-weight: 800;
+}
+
+.jobway-testprime-benefit-sub {
+  color: #777777;
+
+  font-size: 11px;
+  line-height: 1.35;
+
+  font-weight: 400;
+}
+
+/* =========================================
+   CTA
+========================================= */
+
+.jobway-testprime-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 35px;
+
+  margin-top: 30px;
+
+  padding: 0 19px;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      100deg,
+      #f15a24 0%,
+      #e13032 50%,
+      #d91f68 100%
+    );
+
+  color: #ffffff;
+
+  font-size: 11px;
+  line-height: 1;
+
+  font-weight: 800;
+
+  text-decoration: none;
+
+  box-shadow:
+    0 5px 14px rgba(225, 48, 50, 0.16);
+
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.jobway-testprime-cta:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 7px 18px rgba(225, 48, 50, 0.22);
+}
+
+.jobway-testprime-cta:focus-visible {
+  outline: 2px solid #e13032;
+  outline-offset: 3px;
+}
+
+/* =========================================
+   RIGHT HERO
+========================================= */
+
+.jobway-testprime-hero-wrap {
+  position: relative;
+
+  width: 100%;
+  height: 100%;
+
+  min-height: 450px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jobway-testprime-hero {
+  position: relative;
+  z-index: 2;
+
+  display: block;
+
+  width: 100%;
+
+  max-width: 570px;
+
+  height: auto;
+
+  object-fit: contain;
+
+  user-select: none;
+}
+
+/* =========================================
+   DESKTOP TUNING
+========================================= */
+
+@media (min-width: 1200px) {
+  .jobway-testprime {
+    padding-top: 50px;
+    padding-bottom: 55px;
+  }
+
+  .jobway-testprime-inner {
+    min-height: 470px;
+
+    grid-template-columns:
+      500px
+      minmax(0, 1fr);
+
+    column-gap: 55px;
+  }
+
+  .jobway-testprime-content {
+    padding-left: 0;
+  }
+
+  .jobway-testprime-title {
+    font-size: 39px;
+  }
+
+  .jobway-testprime-hero {
+    max-width: 585px;
+  }
+}
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+  .jobway-testprime {
+    padding: 48px 0 52px;
+  }
+
+  .jobway-testprime-inner {
+    width: min(
+      100% - 40px,
+      720px
+    );
+
+    grid-template-columns: 1fr;
+
+    row-gap: 25px;
+  }
+
+  .jobway-testprime-content {
+    max-width: 600px;
+  }
+
+  .jobway-testprime-hero-wrap {
+    min-height: auto;
+  }
+
+  .jobway-testprime-hero {
+    max-width: 500px;
+  }
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+  .jobway-testprime {
+    padding: 42px 0 48px;
+  }
+
+  .jobway-testprime-inner {
+    width: calc(100% - 32px);
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 28px;
+  }
+
+  .jobway-testprime-content {
+    max-width: none;
+  }
+
+  .jobway-testprime-wordmark {
+    height: 28px;
+  }
+
+  .jobway-testprime-wordmark-text {
+    font-size: 17px;
+  }
+
+  .jobway-testprime-wordmark-logo {
+    height: 20px;
+  }
+
+  .jobway-testprime-title {
+    margin-top: 14px;
+    margin-bottom: 24px;
+
+    font-size: 30px;
+    line-height: 1.18;
+  }
+
+  .jobway-testprime-benefits {
+    gap: 16px;
+  }
+
+  .jobway-testprime-benefit-icon {
+    width: 43px;
+    height: 43px;
+
+    flex-basis: 43px;
+  }
+
+  .jobway-testprime-benefit-title {
+    font-size: 13px;
+  }
+
+  .jobway-testprime-benefit-sub {
+    font-size: 10.5px;
+  }
+
+  .jobway-testprime-cta {
+    width: fit-content;
+
+    margin-top: 27px;
+
+    height: 37px;
+
+    padding: 0 20px;
+
+    font-size: 11px;
+  }
+
+  .jobway-testprime-hero-wrap {
+    min-height: 280px;
+
+    margin-top: -5px;
+  }
+
+  .jobway-testprime-hero {
+    width: 100%;
+    max-width: 430px;
+  }
+}
+
+/* =========================================
+   SMALL MOBILE
+========================================= */
+
+@media (max-width: 400px) {
+  .jobway-testprime-title {
+    font-size: 27px;
+  }
+
+  .jobway-testprime-benefit {
+    gap: 11px;
+  }
+
+  .jobway-testprime-benefit-icon {
+    width: 40px;
+    height: 40px;
+
+    flex-basis: 40px;
+  }
+}
