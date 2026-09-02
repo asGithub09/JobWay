@@ -42,6 +42,10 @@ async function request<T>(
   return data as T;
 }
 
+/* =========================
+   AUTH
+========================= */
+
 export type RegisterPayload = {
   name: string;
   email: string;
@@ -113,4 +117,48 @@ export function login(
       body: JSON.stringify(payload),
     },
   );
+}
+
+/* =========================
+   COURSES
+========================= */
+
+export type CourseFaculty = {
+  _id?: string;
+  id?: string;
+  name?: string;
+  designation?: string;
+  profileImage?: string;
+};
+
+export type Course = {
+  _id?: string;
+  id?: string;
+  title?: string;
+  slug?: string;
+  shortDescription?: string;
+  description?: string;
+  category?: string;
+  thumbnailUrl?: string;
+  faculty?: CourseFaculty[];
+  language?: string;
+  level?: string;
+  duration?: string;
+  validity?: string;
+  price?: number;
+  discountedPrice?: number;
+  isFeatured?: boolean;
+  featured?: boolean;
+  status?: string;
+  [key: string]: unknown;
+};
+
+export type CoursesResponse = {
+  success?: boolean;
+  courses?: Course[];
+  message?: string;
+};
+
+export function getCourses() {
+  return request<CoursesResponse>("/courses");
 }
