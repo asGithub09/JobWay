@@ -1,10 +1,10 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import {
   ArrowRight,
-  Building2,
   BriefcaseBusiness,
+  Building2,
   GraduationCap,
   Laptop,
   Landmark,
@@ -15,6 +15,8 @@ import {
   Trophy,
 } from "lucide-react";
 import { useState } from "react";
+
+import { LeadGenerationModal } from "@/components/home/lead-generation-modal";
 
 type CategoryId =
   | "government"
@@ -41,52 +43,49 @@ const CATEGORIES: CategoryData[] = [
   {
     id: "government",
     label: "Government Jobs",
-    
     cards: [
       {
         title: "Banking Exams",
         description:
-          "SBI â€¢ IBPS â€¢ RRB â€¢ RBI â€¢ NABARD â€¢ JAIIB â€¢ CAIIB Exams",
+          "SBI • IBPS • RRB • RBI • NABARD • JAIIB • CAIIB Exams",
         href: "/exams?category=Banking%20Exams",
         featured: true,
-        
       },
       {
         title: "SSC & Railway Exams",
         description:
-          "SSC CGL â€¢ CHSL â€¢ Railways â€¢ Other SSC â€¢ Police Exams",
+          "SSC CGL • CHSL • Railways • Other SSC • Police Exams",
         href: "/exams?category=SSC%20%26%20Railway",
         featured: true,
-        
       },
       {
         title: "Agri & Food Science",
         description:
-          "IBPS AFO â€¢ FSSAI â€¢ FCI â€¢ ICAR UG/PG â€¢ ASRB NET â€¢ Semester",
+          "IBPS AFO • FSSAI • FCI • ICAR UG/PG • ASRB NET • Semester",
         href: "/exams?category=Agri%20%26%20Food%20Science",
       },
       {
         title: "Engineering Exams",
         description:
-          "SSC JE â€¢ RRB JE â€¢ GATE â€¢ State & Central JE/AE Exams",
+          "SSC JE • RRB JE • GATE • State & Central JE/AE Exams",
         href: "/exams?category=Engineering",
       },
       {
         title: "State Exams",
         description:
-          "State PSC â€¢ Other State Level Exams",
+          "State PSC • Other State Level Exams",
         href: "/exams?category=State%20Exams",
       },
       {
         title: "Teaching, UGC, CSIR",
         description:
-          "UGC NET â€¢ TET â€¢ TGT â€¢ PGT â€¢ CSIR NET â€¢ GATE",
+          "UGC NET • TET • TGT • PGT • CSIR NET • GATE",
         href: "/exams?category=Teaching",
       },
       {
         title: "Nursing & Pharma Exams",
         description:
-          "Nursing â€¢ PHARMA â€¢ Nursing Entrance",
+          "Nursing • PHARMA • Nursing Entrance",
         href: "/exams?category=Nursing%20%26%20Pharma",
       },
     ],
@@ -95,15 +94,13 @@ const CATEGORIES: CategoryData[] = [
   {
     id: "college",
     label: "College Entrance Exams",
-    
     cards: [
       {
         title: "UG & PG Entrance Exams",
         description:
-          "Class 11, 12 & CUET UG Science â€¢ Commerce â€¢ Humanities â€¢ CUET PG â€¢ LAW Entrance â€¢ NEET Counselling â€¢ Study Offline",
+          "Class 11, 12 & CUET UG Science • Commerce • Humanities • CUET PG • LAW Entrance • NEET Counselling • Study Offline",
         href: "/exams?category=College%20Entrance",
         featured: true,
-        
       },
     ],
   },
@@ -111,23 +108,20 @@ const CATEGORIES: CategoryData[] = [
   {
     id: "private",
     label: "Private Jobs & Upskilling",
-    
     cards: [
       {
         title: "Private Bank Jobs",
         description:
-          "Axis Bank â€¢ Kotak Bank",
+          "Axis Bank • Kotak Bank",
         href: "/search?searchTerm=Private%20Bank%20Jobs&primaryFilter=true",
         featured: true,
-        
       },
       {
         title: "AI & Tech Jobs",
         description:
-          "Data Analytics â€¢ Gen AI â€¢ Digital Marketing â€¢ Data Science â€¢ Full Stack Development â€¢ Business Analytics â€¢ Cyber Security",
+          "Data Analytics • Gen AI • Digital Marketing • Data Science • Full Stack Development • Business Analytics • Cyber Security",
         href: "/search?searchTerm=AI%20%26%20Tech%20Jobs&primaryFilter=true",
         featured: true,
-        
       },
       {
         title: "Campus Programs",
@@ -141,28 +135,25 @@ const CATEGORIES: CategoryData[] = [
   {
     id: "upsc",
     label: "UPSC, PSC & Judiciary",
-    
     cards: [
       {
         title: "UPSC Civil Services",
         description:
-          "UPSC CSE â€¢ IAS â€¢ Civil Services Examination â€¢ Prelims â€¢ Mains",
+          "UPSC CSE • IAS • Civil Services Examination • Prelims • Mains",
         href: "/exams?category=UPSC",
         featured: true,
-        
       },
       {
         title: "State PSC Exams",
         description:
-          "State PSC â€¢ PCS â€¢ State Civil Services â€¢ Government Recruitment",
+          "State PSC • PCS • State Civil Services • Government Recruitment",
         href: "/exams?category=State%20PSC",
         featured: true,
-        
       },
       {
         title: "Judiciary Exams",
         description:
-          "Judicial Services â€¢ Civil Judge â€¢ Law Entrance & Judiciary Preparation",
+          "Judicial Services • Civil Judge • Law Entrance & Judiciary Preparation",
         href: "/exams?category=Judiciary",
       },
     ],
@@ -379,7 +370,9 @@ function CategoryTab({
         className={[
           "relative z-10 max-w-[150px] text-[14px] font-semibold leading-[1.35]",
           "sm:text-[15px]",
-          active ? styles.text : "text-slate-700",
+          active
+            ? styles.text
+            : "text-slate-700",
         ].join(" ")}
       >
         {category.label}
@@ -393,17 +386,21 @@ function CategoryTab({
           "ring-1 ring-black/[0.04]",
         ].join(" ")}
       >
-        <img
-          src={category.image}
-          alt=""
-          width={83}
-          height={83}
-          className="h-[83px] w-[83px] object-contain"
-          loading="eager"
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
-          }}
-        />
+        {category.image ? (
+          <img
+            src={category.image}
+            alt=""
+            width={83}
+            height={83}
+            className="h-[83px] w-[83px] object-contain"
+            loading="eager"
+            onError={(event) => {
+              event.currentTarget.style.display =
+                "none";
+            }}
+          />
+        ) : null}
+
         <span
           className={[
             "absolute inset-0 -z-10 flex items-center justify-center",
@@ -454,18 +451,20 @@ function CardImage({
 function CategoryCard({
   card,
   category,
+  onExplore,
 }: {
   card: CardData;
   category: CategoryId;
+  onExplore: (destination: string) => void;
 }) {
   const styles = CATEGORY_STYLES[category];
 
   return (
-    <Link
-      href={card.href}
+    <button
+      type="button"
+      onClick={() => onExplore(card.href)}
       className={[
-        "group relative flex min-w-0 overflow-hidden rounded-[12px]",
-        "bg-white p-4",
+        "group relative flex min-w-0 w-full overflow-hidden rounded-[12px] bg-white p-4 text-left",
         "transition-all duration-200",
         "hover:-translate-y-0.5",
         "hover:shadow-[0_8px_28px_rgba(15,23,42,0.09)]",
@@ -510,7 +509,7 @@ function CategoryCard({
             "transition-all duration-200",
             card.featured
               ? `rounded-full bg-gradient-to-r ${styles.accent} px-4 py-2 text-white shadow-sm group-hover:gap-3`
-              : `pt-5 text-[#111827] group-hover:${styles.text}`,
+              : `pt-5 text-[#111827]`,
           ].join(" ")}
         >
           Explore Exams
@@ -525,7 +524,7 @@ function CategoryCard({
       {card.image ? (
         <CardImage card={card} />
       ) : null}
-    </Link>
+    </button>
   );
 }
 
@@ -563,6 +562,12 @@ export function ExamSelector() {
   const [activeCategory, setActiveCategory] =
     useState<CategoryId>("government");
 
+  const [leadOpen, setLeadOpen] =
+    useState(false);
+
+  const [leadDestination, setLeadDestination] =
+    useState("");
+
   const selectedCategory =
     CATEGORIES.find(
       (category) =>
@@ -582,125 +587,150 @@ export function ExamSelector() {
   const styles =
     CATEGORY_STYLES[activeCategory];
 
+  const handleExplore = (
+    destination: string,
+  ) => {
+    setLeadDestination(destination);
+    setLeadOpen(true);
+  };
+
   return (
-    <section
-      aria-labelledby="exam-selector-heading"
-      className="relative w-full bg-white py-12 sm:py-14 lg:py-16"
-    >
-      <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-6 lg:px-0">
-        {/* Heading */}
-        <h2
-          id="exam-selector-heading"
-          className="text-[28px] font-bold leading-[1.2] tracking-[-0.035em] text-[#111111] sm:text-[32px] lg:text-[34px]"
-        >
-          What are you preparing for?
-        </h2>
-
-        {/* Category area */}
-        <div className="mt-7">
-          {/* Tabs */}
-          <div
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
-            role="tablist"
-            aria-label="Exam categories"
+    <>
+      <section
+        aria-labelledby="exam-selector-heading"
+        className="relative w-full bg-white py-12 sm:py-14 lg:py-16"
+      >
+        <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-6 lg:px-0">
+          <h2
+            id="exam-selector-heading"
+            className="text-[28px] font-bold leading-[1.2] tracking-[-0.035em] text-[#111111] sm:text-[32px] lg:text-[34px]"
           >
-            {CATEGORIES.map((category) => (
-              <CategoryTab
-                key={category.id}
-                category={category}
-                active={
-                  category.id === activeCategory
-                }
-                onClick={() =>
-                  setActiveCategory(category.id)
-                }
-              />
-            ))}
-          </div>
+            What are you preparing for?
+          </h2>
 
-          {/* Active panel */}
-          <div
-            id="category-panel"
-            role="tabpanel"
-            aria-live="polite"
-            className={[
-              "mt-0 overflow-hidden rounded-b-[14px]",
-              "border-2 border-t-0",
-              styles.border,
-              styles.panelBackground,
-            ].join(" ")}
-          >
-            <div className="p-4 sm:p-5 lg:p-6">
-              {featuredCards.length > 0 ? (
-                <>
-                  {/* Featured cards */}
-                  <div
-                    className={[
-                      "grid gap-5",
-                      featuredCards.length === 1
-                        ? "grid-cols-1"
-                        : "grid-cols-1 lg:grid-cols-2",
-                    ].join(" ")}
-                  >
-                    {featuredCards.map((card) => (
-                      <CategoryCard
-                        key={card.title}
-                        card={card}
-                        category={activeCategory}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Regular cards */}
-                  {regularCards.length > 0 ? (
-                    <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                      {regularCards.map((card) => (
-                        <CategoryCard
-                          key={card.title}
-                          card={card}
-                          category={activeCategory}
-                        />
-                      ))}
-                    </div>
-                  ) : null}
-                </>
-              ) : (
-                <EmptyCategory
-                  category={selectedCategory}
+          <div className="mt-7">
+            <div
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+              role="tablist"
+              aria-label="Exam categories"
+            >
+              {CATEGORIES.map((category) => (
+                <CategoryTab
+                  key={category.id}
+                  category={category}
+                  active={
+                    category.id ===
+                    activeCategory
+                  }
+                  onClick={() =>
+                    setActiveCategory(
+                      category.id,
+                    )
+                  }
                 />
-              )}
+              ))}
+            </div>
+
+            <div
+              id="category-panel"
+              role="tabpanel"
+              aria-live="polite"
+              className={[
+                "mt-0 overflow-hidden rounded-b-[14px]",
+                "border-2 border-t-0",
+                styles.border,
+                styles.panelBackground,
+              ].join(" ")}
+            >
+              <div className="p-4 sm:p-5 lg:p-6">
+                {featuredCards.length > 0 ? (
+                  <>
+                    <div
+                      className={[
+                        "grid gap-5",
+                        featuredCards.length === 1
+                          ? "grid-cols-1"
+                          : "grid-cols-1 lg:grid-cols-2",
+                      ].join(" ")}
+                    >
+                      {featuredCards.map(
+                        (card) => (
+                          <CategoryCard
+                            key={card.title}
+                            card={card}
+                            category={
+                              activeCategory
+                            }
+                            onExplore={
+                              handleExplore
+                            }
+                          />
+                        ),
+                      )}
+                    </div>
+
+                    {regularCards.length >
+                    0 ? (
+                      <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        {regularCards.map(
+                          (card) => (
+                            <CategoryCard
+                              key={card.title}
+                              card={card}
+                              category={
+                                activeCategory
+                              }
+                              onExplore={
+                                handleExplore
+                              }
+                            />
+                          ),
+                        )}
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <EmptyCategory
+                    category={
+                      selectedCategory
+                    }
+                  />
+                )}
+              </div>
             </div>
           </div>
+
+          <div className="mt-8 flex items-center justify-center">
+            <Link
+              href="/exams"
+              className="group inline-flex items-center gap-2 text-[12px] font-semibold text-[#697586] transition-colors hover:text-[#800E13]"
+            >
+              <BriefcaseBusiness
+                className="h-4 w-4 text-[#800E13]"
+                aria-hidden="true"
+              />
+
+              Explore all exams and preparation
+
+              <ArrowRight
+                className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1"
+                aria-hidden="true"
+              />
+            </Link>
+          </div>
+
+          <div className="sr-only">
+            <ShieldCheck aria-hidden="true" />
+            <TrainFront aria-hidden="true" />
+          </div>
         </div>
+      </section>
 
-        {/* All exams */}
-        <div className="mt-8 flex items-center justify-center">
-          <Link
-            href="/exams"
-            className="group inline-flex items-center gap-2 text-[12px] font-semibold text-[#697586] transition-colors hover:text-[#E13032]"
-          >
-            <BriefcaseBusiness
-              className="h-4 w-4 text-[#E13032]"
-              aria-hidden="true"
-            />
-
-            Explore all exams and preparation
-
-            <ArrowRight
-              className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1"
-              aria-hidden="true"
-            />
-          </Link>
-        </div>
-
-        {/* Accessibility / preload */}
-        <div className="sr-only">
-          <ShieldCheck aria-hidden="true" />
-          <TrainFront aria-hidden="true" />
-        </div>
-      </div>
-    </section>
+      <LeadGenerationModal
+        open={leadOpen}
+        onClose={() => setLeadOpen(false)}
+        destination={leadDestination}
+      />
+    </>
   );
 }
-
-

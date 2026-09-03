@@ -48,8 +48,16 @@ export default function LoginPage() {
         );
       }
 
+      // Store the authenticated user and token.
       signIn(response.token, response.user);
 
+      // Send administrators directly to the Admin Dashboard.
+      if (response.user.role === "admin") {
+        window.location.href = "/admin";
+        return;
+      }
+
+      // Normal students continue to the main JobWay website.
       window.location.href = "/";
     } catch (caughtError) {
       const message =
@@ -101,8 +109,8 @@ export default function LoginPage() {
               }
               autoComplete="email"
               disabled={loading}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-[#E13032] focus:ring-4 focus:ring-red-50 disabled:bg-slate-50"
               placeholder="you@example.com"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-[#E13032] focus:ring-4 focus:ring-red-50 disabled:bg-slate-50"
             />
           </div>
 
@@ -123,8 +131,8 @@ export default function LoginPage() {
               }
               autoComplete="current-password"
               disabled={loading}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-[#E13032] focus:ring-4 focus:ring-red-50 disabled:bg-slate-50"
               placeholder="Enter your password"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition focus:border-[#E13032] focus:ring-4 focus:ring-red-50 disabled:bg-slate-50"
             />
           </div>
 
