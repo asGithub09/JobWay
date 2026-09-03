@@ -1,79 +1,183 @@
-﻿/*
- * JobWay Frontend API Layer
- *
- * IMPORTANT:
- * The dedicated JobWay backend has not been created yet.
- *
- * These functions intentionally do NOT connect to the old OJDV backend.
- * They provide the interface required by the existing authentication UI.
- *
- * When the new JobWay backend is created, these functions will be connected
- * to the new backend without requiring the authentication pages themselves
- * to be rewritten.
- */
+﻿const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5001/api";
 
-type ApiError = Error & {
-  status?: number;
-  code?: string;
-};
+async function request<T>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const response = await fetch(
+    `${API_BASE_URL}${endpoint}`,
+    {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+      credentials: "include",
+    },
+  );
 
-export type RegisterPayload = {
+  const data = await response.json().catch(() => ({
+    success: false,
+    message: "Invalid server response",
+  }));
+
+  if (!response.ok) {
+    throw new Error(
+      data.message || "Something went wrong",
+    );
+  }
+
+  return data;
+}
+
+/* =========================================================
+   AUTH TYPES
+   ========================================================= */
+
+export interface RegisterPayload {
   name: string;
   email: string;
   phone: string;
   password: string;
-};
+}
 
-export type VerifyEmailPayload = {
-  userId: string;
-  otp: string;
-};
-
-export type LoginPayload = {
+export interface LoginPayload {
   email: string;
   password: string;
-};
+}
 
-export type AuthUser = {
-  id?: string;
-  _id?: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-  role?: string;
-  status?: string;
-  isEmailVerified?: boolean;
-};
+export interface VerifyEmailPayload {
+  email: string;
+  otp: string;
+}
 
-export type AuthResponse = {
-  success?: boolean;
-  message?: string;
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  otp: string;
+  newPassword: string;
+}
+
+export interface ResendVerificationPayload {
+  email: string;
+}
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  isEmailVerified: boolean;
+  role: "student" | "admin";
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message: string;
   token?: string;
   user?: AuthUser;
-  userId?: string;
-  [key: string]: unknown;
-};
-
-function backendNotConfigured(): never {
-  const error = new Error(
-    "JobWay backend is not connected yet. Authentication will be enabled when the dedicated JobWay backend is created.",
-  ) as ApiError;
-
-  error.code = "BACKEND_NOT_CONFIGURED";
-
-  throw error;
+  requiresVerification?: boolean;
+  email?: string;
+  expiresAt?: string;
 }
 
-export function register(_payload: RegisterPayload): Promise<AuthResponse> {
-  return Promise.reject(backendNotConfigured());
-}
+/* =========================================================
+   REGISTER
+   ========================================================= */
 
-export function verifyEmail(
-  _payload: VerifyEmailPayload,
+export async function register(
+  payload: RegisterPayload,
 ): Promise<AuthResponse> {
-  return Promise.reject(backendNotConfigured());
+  return request<AuthResponse>(
+    "/auth/register",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
-export function login(_payload: LoginPayload): Promise<AuthResponse> {
-  return Promise.reject(backendNotConfigured());
+/* =========================================================
+   VERIFY EMAIL
+   ========================================================= */
+
+export async function verifyEmail(
+  payload: VerifyEmailPayload,
+): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    "/auth/verify-email",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/* =========================================================
+   RESEND VERIFICATION
+   ========================================================= */
+
+export async function resendVerification(
+  payload: ResendVerificationPayload,
+): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    "/auth/resend-verification",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/* =========================================================
+   LOGIN
+   ========================================================= */
+
+export async function login(
+  payload: LoginPayload,
+): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    "/auth/login",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/* =========================================================
+   FORGOT PASSWORD
+   ========================================================= */
+
+export async function forgotPassword(
+  payload: ForgotPasswordPayload,
+): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    "/auth/forgot-password",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/* =========================================================
+   RESET PASSWORD
+   ========================================================= */
+
+export async function resetPassword(
+  payload: ResetPasswordPayload,
+): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    "/auth/reset-password",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
