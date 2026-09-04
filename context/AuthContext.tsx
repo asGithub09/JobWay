@@ -14,30 +14,21 @@ type AuthContextValue = {
   token: string | null;
   user: AuthUser | null;
   isAuthenticated: boolean;
-  signIn: (
-    token: string,
-    user: AuthUser,
-  ) => void;
+  signIn: (token: string, user: AuthUser) => void;
+  updateUser: (user: AuthUser) => void;
   signOut: () => void;
 };
 
-const AuthContext =
-  createContext<AuthContextValue | undefined>(
-    undefined,
-  );
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const TOKEN_KEY = "jobway_token";
 const USER_KEY = "jobway_user";
 
 function getStoredUser(): AuthUser | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
+  if (typeof window === "undefined") return null;
 
   try {
-    const stored =
-      window.localStorage.getItem(USER_KEY);
-
+    const stored = window.localStorage.getItem(USER_KEY);
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -45,42 +36,30 @@ function getStoredUser(): AuthUser | null {
 }
 
 function getStoredToken(): string | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
+  if (typeof window === "undefined") return null;
 
   return window.localStorage.getItem(TOKEN_KEY);
 }
 
-export function AuthProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const [token, setToken] = useState<string | null>(
-    getStoredToken,
-  );
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [token, setToken] = useState<string | null>(getStoredToken);
+  const [user, setUser] = useState<AuthUser | null>(getStoredUser);
 
-  const [user, setUser] =
-    useState<AuthUser | null>(getStoredUser);
-
-  const signIn = (
-    nextToken: string,
-    nextUser: AuthUser,
-  ) => {
+  const signIn = (nextToken: string, nextUser: AuthUser) => {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(
-        TOKEN_KEY,
-        nextToken,
-      );
-
-      window.localStorage.setItem(
-        USER_KEY,
-        JSON.stringify(nextUser),
-      );
+      window.localStorage.setItem(TOKEN_KEY, nextToken);
+      window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     }
 
     setToken(nextToken);
+    setUser(nextUser);
+  };
+
+  const updateUser = (nextUser: AuthUser) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    }
+
     setUser(nextUser);
   };
 
@@ -100,6 +79,7 @@ export function AuthProvider({
       user,
       isAuthenticated: Boolean(token),
       signIn,
+      updateUser,
       signOut,
     }),
     [token, user],
@@ -116,9 +96,7 @@ export function useAuth() {
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error(
-      "useAuth must be used inside an AuthProvider.",
-    );
+    throw new Error("useAuth must be used inside AuthProvider.");
   }
 
   return context;

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { useAuth } from "@/context/AuthContext";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { DesktopNavigation } from "@/components/layout/desktop-navigation";
@@ -49,10 +50,33 @@ export function SiteHeader({
   const [authModalOpen, setAuthModalOpen] =
     useState(false);
 
+  /*
+   * Authentication state
+   *
+   * AuthContext already stores the user's token and profile
+   * in localStorage. authReady prevents the header from
+   * rendering the logged-in state before the browser has
+   * mounted and restored the client-side authentication state.
+   */
+  const {
+    user,
+    isAuthenticated,
+    signOut,
+  } = useAuth();
+
+  const [authReady, setAuthReady] =
+    useState(false);
+
+  const [accountOpen, setAccountOpen] =
+    useState(false);
+
   const closeTimer =
     useRef<ReturnType<typeof setTimeout> | null>(
       null,
     );
+
+  const accountRef =
+    useRef<HTMLDivElement | null>(null);
 
   const clearCloseTimer = () => {
     if (closeTimer.current !== null) {
@@ -84,6 +108,7 @@ export function SiteHeader({
 
   const openAuthModal = () => {
     closeMegaMenu();
+    setAccountOpen(false);
     setMobileMenuOpen(false);
     setSearchOpen(false);
     setAuthModalOpen(true);
@@ -93,12 +118,54 @@ export function SiteHeader({
     setAuthModalOpen(false);
   };
 
+  /*
+   * Mark authentication as ready after the client mounts.
+   * This allows AuthContext to restore the saved student
+   * session from localStorage before the logged-in header
+   * is displayed.
+   */
+  useEffect(() => {
+    setAuthReady(true);
+  }, []);
+
+  /*
+   * Close the account dropdown when clicking outside it.
+   */
+  useEffect(() => {
+    const handleAccountPointerDown = (
+      event: MouseEvent,
+    ) => {
+      const target =
+        event.target as HTMLElement | null;
+
+      if (
+        accountRef.current &&
+        !accountRef.current.contains(target)
+      ) {
+        setAccountOpen(false);
+      }
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleAccountPointerDown,
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleAccountPointerDown,
+      );
+    };
+  }, []);
+
   useEffect(() => {
     const handleEscape = (
       event: KeyboardEvent,
     ) => {
       if (event.key === "Escape") {
         closeMegaMenu();
+        setAccountOpen(false);
       }
     };
 
@@ -154,11 +221,32 @@ export function SiteHeader({
     }
 
     closeMegaMenu();
+    setAccountOpen(false);
 
     window.location.href = `/search?q=${encodeURIComponent(
       query,
     )}`;
   };
+
+  /*
+   * Global student logout.
+   *
+   * AuthContext removes the persisted token and user
+   * information from localStorage and immediately updates
+   * the entire application's authentication state.
+   */
+  const handleSignOut = () => {
+    closeMegaMenu();
+    setAccountOpen(false);
+    setMobileMenuOpen(false);
+    setSearchOpen(false);
+
+    signOut();
+  };
+
+  const firstName =
+    user?.name?.trim().split(/\s+/)[0] ||
+    "Student";
 
   const primaryItems: {
     id: MegaMenuId;
@@ -186,6 +274,11 @@ export function SiteHeader({
       href: "/exams/upsc-state-psc",
     },
   ];
+
+  const loggedIn =
+    authReady &&
+    isAuthenticated &&
+    Boolean(user);
 
   return (
     <>
@@ -349,22 +442,141 @@ export function SiteHeader({
                 Get App
               </Link>
 
-              {/* Login / Register trigger */}
-              <button
-                type="button"
-                onClick={
-                  openAuthModal
-                }
-                aria-label="Login or Register"
-                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-[#E13032] bg-white px-4 text-sm font-extrabold text-[#E13032] transition-all duration-200 hover:bg-red-50 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2"
-              >
-                <UserRound
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                />
+              {/* =================================================
+                  DESKTOP AUTH / STUDENT ACCOUNT
+                 ================================================= */}
+              {loggedIn ? (
+                <div
+                  ref={accountRef}
+                  className="relative"
+                >
+                  <button
+                    type="button"
+                    aria-label="Open student account menu"
+                    aria-haspopup="menu"
+                    aria-expanded={
+                      accountOpen
+                    }
+                    onClick={() => {
+                      closeMegaMenu();
+                      setAccountOpen(
+                        (current) =>
+                          !current,
+                      );
+                    }}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-extrabold text-slate-800 transition-all duration-200 hover:border-red-200 hover:bg-red-50 hover:text-[#E13032] focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-50 text-[#E13032]">
+                      <UserRound
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      />
+                    </span>
 
-                Login / Register
-              </button>
+                    <span className="max-w-[110px] truncate">
+                      Hi, {firstName}
+                    </span>
+
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200 ${
+                        accountOpen
+                          ? "rotate-180 text-[#E13032]"
+                          : ""
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {accountOpen ? (
+                    <div
+                      role="menu"
+                      aria-label="Student account menu"
+                      className="absolute right-0 top-[calc(100%+10px)] z-[70] w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_50px_rgba(15,23,42,0.14)]"
+                    >
+                      <div className="border-b border-slate-100 px-3 py-2.5">
+                        <p className="truncate text-sm font-extrabold text-slate-900">
+                          {user?.name}
+                        </p>
+
+                        <p className="truncate text-xs font-medium text-slate-500">
+                          {user?.email}
+                        </p>
+                      </div>
+
+                      <div className="py-1">
+                        <Link
+                          href="/dashboard"
+                          role="menuitem"
+                          onClick={() =>
+                            setAccountOpen(
+                              false,
+                            )
+                          }
+                          className="flex items-center rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-red-50 hover:text-[#E13032]"
+                        >
+                          My Dashboard
+                        </Link>
+
+                        <Link
+                          href="/courses"
+                          role="menuitem"
+                          onClick={() =>
+                            setAccountOpen(
+                              false,
+                            )
+                          }
+                          className="flex items-center rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-red-50 hover:text-[#E13032]"
+                        >
+                          My Courses
+                        </Link>
+
+                        <Link
+                          href="/exams"
+                          role="menuitem"
+                          onClick={() =>
+                            setAccountOpen(
+                              false,
+                            )
+                          }
+                          className="flex items-center rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-red-50 hover:text-[#E13032]"
+                        >
+                          Exams & Mock Tests
+                        </Link>
+                      </div>
+
+                      <div className="border-t border-slate-100 pt-1">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={
+                            handleSignOut
+                          }
+                          className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                /* Login / Register trigger */
+                <button
+                  type="button"
+                  onClick={
+                    openAuthModal
+                  }
+                  aria-label="Login or Register"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-[#E13032] bg-white px-4 text-sm font-extrabold text-[#E13032] transition-all duration-200 hover:bg-red-50 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2"
+                >
+                  <UserRound
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  />
+
+                  Login / Register
+                </button>
+              )}
             </div>
 
             {/* Mobile search */}
@@ -387,17 +599,45 @@ export function SiteHeader({
               />
             </button>
 
-            {/* Mobile Login / Register trigger */}
-            <button
-              type="button"
-              aria-label="Login or Register"
-              onClick={
-                openAuthModal
-              }
-              className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-[#E13032] px-3 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:bg-[#C92426] hover:shadow-md focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2 sm:px-4 sm:text-sm lg:hidden"
-            >
-              Login / Register
-            </button>
+            {/* =================================================
+                MOBILE AUTH / STUDENT ACCOUNT
+               ================================================= */}
+            {loggedIn ? (
+              <button
+                type="button"
+                aria-label="Open student dashboard"
+                onClick={() => {
+                  setMobileMenuOpen(
+                    false,
+                  );
+                  setSearchOpen(false);
+
+                  window.location.href =
+                    "/dashboard";
+                }}
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#E13032] px-3 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:bg-[#C92426] hover:shadow-md focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2 sm:px-4 sm:text-sm lg:hidden"
+              >
+                <UserRound
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                />
+
+                <span className="max-w-[90px] truncate">
+                  {firstName}
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                aria-label="Login or Register"
+                onClick={
+                  openAuthModal
+                }
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-[#E13032] px-3 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:bg-[#C92426] hover:shadow-md focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2 sm:px-4 sm:text-sm lg:hidden"
+              >
+                Login / Register
+              </button>
+            )}
           </div>
 
           {/* Mobile search */}

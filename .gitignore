@@ -45,3 +45,13 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+# JobWay local uploads
+/backend/uploads/
+
+# Local backup files
+*.backup.*
+*.backup.ts
+*.backup.js
+
+# Local test assets
+/course-banner-test.png

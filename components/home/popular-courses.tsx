@@ -12,10 +12,11 @@ import {
   Star,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Container } from "@/components/shared/container";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { getCourses } from "@/lib/api";
 
 type CourseCategory =
   | "All"
@@ -41,6 +42,30 @@ type Course = {
   badge: string;
   level: string;
   image?: string;
+  slug: string;
+};
+
+type ApiCourse = {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  level: string;
+  description: string;
+  bannerImage?: string;
+  duration: string;
+  language: string;
+  price: number;
+  discountPrice: number;
+  instructor: string;
+  syllabus?: Array<{
+    title?: string;
+    lessons?: unknown[];
+  }>;
+  isFeatured: boolean;
+  isPublished: boolean;
+  interestedCount: number;
+  enrolledCount: number;
 };
 
 const COURSE_CATEGORIES: CourseCategory[] = [
@@ -52,113 +77,155 @@ const COURSE_CATEGORIES: CourseCategory[] = [
   "Engineering",
 ];
 
-const COURSES: Course[] = [
-  {
-    id: "banking-complete-foundation",
-    category: "Banking",
-    title: "Banking Exam Complete Foundation",
-    instructor: "JobWay Expert Faculty",
+/* =========================================================
+   DISPLAY HELPERS
+   ========================================================= */
+
+function formatPrice(value: number) {
+  if (!value || value <= 0) {
+    return "Free";
+  }
+
+  return `₹${value.toLocaleString("en-IN")}`;
+}
+
+function formatLearners(value: number) {
+  if (!value || value <= 0) {
+    return "0";
+  }
+
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1).replace(".0", "")}K`;
+  }
+
+  return value.toLocaleString("en-IN");
+}
+
+function getOriginalPrice(course: ApiCourse) {
+  const currentPrice =
+    course.discountPrice > 0
+      ? course.discountPrice
+      : course.price;
+
+  if (!currentPrice || currentPrice <= 0) {
+    return "";
+  }
+
+  if (course.discountPrice > 0 && course.price > course.discountPrice) {
+    return formatPrice(course.price);
+  }
+
+  return "";
+}
+
+function getCourseLessons(course: ApiCourse) {
+  if (!course.syllabus?.length) {
+    return 0;
+  }
+
+  return course.syllabus.reduce((total, module) => {
+    const lessons = Array.isArray(module.lessons)
+      ? module.lessons.length
+      : 0;
+
+    return total + lessons;
+  }, 0);
+}
+
+function normalizeCategory(category: string): Exclude<
+  CourseCategory,
+  "All"
+> {
+  const normalized = category.trim().toLowerCase();
+
+  if (
+    normalized.includes("bank")
+  ) {
+    return "Banking";
+  }
+
+  if (
+    normalized.includes("ssc") ||
+    normalized.includes("railway")
+  ) {
+    return "SSC & Railway";
+  }
+
+  if (
+    normalized.includes("upsc")
+  ) {
+    return "UPSC";
+  }
+
+  if (
+    normalized.includes("teach") ||
+    normalized.includes("tet")
+  ) {
+    return "Teaching";
+  }
+
+  if (
+    normalized.includes("engineer") ||
+    normalized.includes("technical")
+  ) {
+    return "Engineering";
+  }
+
+  return "SSC & Railway";
+}
+
+function getCourseBadge(course: ApiCourse) {
+  if (course.isFeatured) {
+    return "Featured";
+  }
+
+  if (course.enrolledCount >= 1000) {
+    return "Popular";
+  }
+
+  return "New";
+}
+
+function mapApiCourse(course: ApiCourse): Course {
+  const effectivePrice =
+    course.discountPrice > 0
+      ? course.discountPrice
+      : course.price;
+
+  return {
+    id: course.id,
+    slug: course.slug,
+    category: normalizeCategory(course.category),
+    title: course.title,
+    instructor:
+      course.instructor || "JobWay Expert Faculty",
     description:
-      "Build strong fundamentals in Quantitative Aptitude, Reasoning, English and Banking Awareness.",
-    lessons: 120,
-    duration: "85 Hours",
-    students: "2.4K",
+      course.description ||
+      "Structured preparation designed to help you learn concepts, practice consistently and prepare with confidence.",
+    lessons: getCourseLessons(course),
+    duration:
+      course.duration || "Self Paced",
+    students: formatLearners(
+      course.enrolledCount,
+    ),
     rating: 4.8,
-    reviews: "428",
-    price: "₹1,999",
-    originalPrice: "₹3,999",
-    badge: "Bestseller",
-    level: "Beginner to Advanced",
-    image: "/images/courses/banking.png",
-  },
-  {
-    id: "ssc-cgl-complete",
-    category: "SSC & Railway",
-    title: "SSC CGL Complete Preparation",
-    instructor: "JobWay SSC Faculty",
-    description:
-      "A structured preparation program covering the core subjects and practice required for SSC CGL.",
-    lessons: 145,
-    duration: "100 Hours",
-    students: "3.1K",
-    rating: 4.9,
-    reviews: "612",
-    price: "₹2,499",
-    originalPrice: "₹4,999",
-    badge: "Popular",
-    level: "All Levels",
-  },
-  {
-    id: "upsc-gs-foundation",
-    category: "UPSC",
-    title: "UPSC General Studies Foundation",
-    instructor: "JobWay UPSC Faculty",
-    description:
-      "Develop a systematic approach to General Studies with structured lessons and revision resources.",
-    lessons: 180,
-    duration: "140 Hours",
-    students: "1.8K",
-    rating: 4.8,
-    reviews: "305",
-    price: "₹3,999",
-    originalPrice: "₹6,999",
-    badge: "Featured",
-    level: "Foundation",
-    image: "/images/courses/ssc.avif",
-  },
-  {
-    id: "teaching-tet-master",
-    category: "Teaching",
-    title: "Teaching Exams Master Preparation",
-    instructor: "JobWay Teaching Faculty",
-    description:
-      "Prepare for teaching examinations with concept lessons, practice questions and revision support.",
-    lessons: 110,
-    duration: "75 Hours",
-    students: "1.6K",
-    rating: 4.7,
-    reviews: "264",
-    price: "₹1,799",
-    originalPrice: "₹3,499",
-    badge: "New",
-    level: "Beginner to Advanced",
-    image: "/images/courses/prime.png",
-  },
-  {
-    id: "engineering-technical",
-    category: "Engineering",
-    title: "Engineering Competitive Exam Program",
-    instructor: "JobWay Technical Faculty",
-    description:
-      "Strengthen technical concepts and develop exam-solving speed through structured preparation.",
-    lessons: 160,
-    duration: "125 Hours",
-    students: "1.2K",
-    rating: 4.8,
-    reviews: "198",
-    price: "₹2,999",
-    originalPrice: "₹5,499",
-    badge: "Featured",
-    level: "Intermediate",
-  },
-  {
-    id: "banking-speed-practice",
-    category: "Banking",
-    title: "Banking Speed & Accuracy Program",
-    instructor: "JobWay Banking Faculty",
-    description:
-      "Improve calculation speed, reasoning accuracy and exam-time decision making.",
-    lessons: 90,
-    duration: "60 Hours",
-    students: "1.4K",
-    rating: 4.7,
-    reviews: "221",
-    price: "₹1,499",
-    originalPrice: "₹2,999",
-    badge: "Value Pick",
-    level: "Intermediate",
-  },
-];
+    reviews:
+      course.enrolledCount > 0
+        ? String(course.enrolledCount)
+        : "0",
+    price: formatPrice(effectivePrice),
+    originalPrice: getOriginalPrice(course),
+    badge: getCourseBadge(course),
+    level:
+      course.level || "All Levels",
+    image:
+      course.bannerImage || undefined,
+  };
+}
+
+/* =========================================================
+   COURSE THUMBNAIL
+   ========================================================= */
 
 function CourseThumbnail({
   category,
@@ -232,28 +299,46 @@ function CourseThumbnail({
   );
 }
 
-function RatingStars({ rating }: { rating: number }) {
+/* =========================================================
+   RATING
+   ========================================================= */
+
+function RatingStars({
+  rating,
+}: {
+  rating: number;
+}) {
   return (
     <div
       className="flex items-center gap-0.5"
       aria-label={`${rating} out of 5 stars`}
     >
-      {Array.from({ length: 5 }).map((_, index) => (
-        <Star
-          key={index}
-          className={`h-3.5 w-3.5 ${
-            index < Math.round(rating)
-              ? "fill-amber-400 text-amber-400"
-              : "text-slate-200"
-          }`}
-          aria-hidden="true"
-        />
-      ))}
+      {Array.from({ length: 5 }).map(
+        (_, index) => (
+          <Star
+            key={index}
+            className={`h-3.5 w-3.5 ${
+              index < Math.round(rating)
+                ? "fill-amber-400 text-amber-400"
+                : "text-slate-200"
+            }`}
+            aria-hidden="true"
+          />
+        ),
+      )}
     </div>
   );
 }
 
-function CourseCard({ course }: { course: Course }) {
+/* =========================================================
+   COURSE CARD
+   ========================================================= */
+
+function CourseCard({
+  course,
+}: {
+  course: Course;
+}) {
   return (
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-[18px] border border-[#e5e8ed] bg-white transition-all duration-300 hover:-translate-y-1 hover:border-red-100 hover:shadow-[0_16px_38px_rgba(15,23,42,0.10)]">
       <CourseThumbnail
@@ -292,7 +377,9 @@ function CourseCard({ course }: { course: Course }) {
         </div>
 
         <div className="mt-4 flex items-center gap-2 border-t border-[#edf0f3] pt-4">
-          <RatingStars rating={course.rating} />
+          <RatingStars
+            rating={course.rating}
+          />
 
           <span className="text-xs font-black text-[#39475b]">
             {course.rating}
@@ -309,7 +396,9 @@ function CourseCard({ course }: { course: Course }) {
               className="h-3.5 w-3.5"
               aria-hidden="true"
             />
-            {course.lessons} lessons
+            {course.lessons > 0
+              ? `${course.lessons} lessons`
+              : "Structured course"}
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -336,18 +425,22 @@ function CourseCard({ course }: { course: Course }) {
                 {course.price}
               </span>
 
-              <span className="text-xs font-medium text-[#9aa5b3] line-through">
-                {course.originalPrice}
-              </span>
+              {course.originalPrice ? (
+                <span className="text-xs font-medium text-[#9aa5b3] line-through">
+                  {course.originalPrice}
+                </span>
+              ) : null}
             </div>
 
             <span className="text-[10px] font-semibold text-green-600">
-              Limited-time pricing
+              {course.price === "Free"
+                ? "Start learning today"
+                : "Limited-time pricing"}
             </span>
           </div>
 
           <Link
-            href={`/courses/${course.id}`}
+            href={`/courses/${course.slug}`}
             aria-label={`View ${course.title}`}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-[#E13032] transition-all duration-200 hover:bg-[#E13032] hover:text-white focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2"
           >
@@ -362,24 +455,93 @@ function CourseCard({ course }: { course: Course }) {
   );
 }
 
+/* =========================================================
+   POPULAR COURSES
+   ========================================================= */
+
 export function PopularCourses() {
+  const [
+    apiCourses,
+    setApiCourses,
+  ] = useState<ApiCourse[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
   const [activeCategory, setActiveCategory] =
     useState<CourseCategory>("All");
-
-  const filteredCourses =
-    activeCategory === "All"
-      ? COURSES
-      : COURSES.filter(
-          (course) =>
-            course.category === activeCategory,
-        );
 
   const [visibleStart, setVisibleStart] =
     useState(0);
 
-  const canGoPrevious = visibleStart > 0;
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadCourses() {
+      try {
+        setLoading(true);
+
+        const response = await getCourses();
+
+        if (!mounted) {
+          return;
+        }
+
+        const publishedCourses =
+          (response.courses || []).filter(
+            (course: ApiCourse) =>
+              course.isPublished,
+          );
+
+        setApiCourses(
+          publishedCourses,
+        );
+      } catch (error) {
+        console.error(
+          "Failed to load popular courses:",
+          error,
+        );
+
+        if (mounted) {
+          setApiCourses([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCourses();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const courses = useMemo(
+    () =>
+      apiCourses.map(
+        mapApiCourse,
+      ),
+    [apiCourses],
+  );
+
+  const filteredCourses =
+    activeCategory === "All"
+      ? courses
+      : courses.filter(
+          (course) =>
+            course.category ===
+            activeCategory,
+        );
+
+  const canGoPrevious =
+    visibleStart > 0;
+
   const canGoNext =
-    visibleStart + 3 < filteredCourses.length;
+    visibleStart + 3 <
+    filteredCourses.length;
 
   const handleCategoryChange = (
     category: CourseCategory,
@@ -390,19 +552,24 @@ export function PopularCourses() {
 
   const handlePrevious = () => {
     if (canGoPrevious) {
-      setVisibleStart((current) =>
-        Math.max(0, current - 1),
+      setVisibleStart(
+        (current) =>
+          Math.max(
+            0,
+            current - 1,
+          ),
       );
     }
   };
 
   const handleNext = () => {
     if (canGoNext) {
-      setVisibleStart((current) =>
-        Math.min(
-          filteredCourses.length - 3,
-          current + 1,
-        ),
+      setVisibleStart(
+        (current) =>
+          Math.min(
+            filteredCourses.length - 3,
+            current + 1,
+          ),
       );
     }
   };
@@ -439,6 +606,7 @@ export function PopularCourses() {
               className="inline-flex items-center gap-1.5 text-sm font-extrabold text-[#E13032] transition hover:text-[#B91C1C]"
             >
               View all courses
+
               <ArrowRight
                 className="h-4 w-4"
                 aria-hidden="true"
@@ -456,14 +624,17 @@ export function PopularCourses() {
             {COURSE_CATEGORIES.map(
               (category) => {
                 const isActive =
-                  category === activeCategory;
+                  category ===
+                  activeCategory;
 
                 return (
                   <button
                     key={category}
                     type="button"
                     role="tab"
-                    aria-selected={isActive}
+                    aria-selected={
+                      isActive
+                    }
                     onClick={() =>
                       handleCategoryChange(
                         category,
@@ -483,20 +654,46 @@ export function PopularCourses() {
           </div>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {visibleCourses.map((course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map(
+              (item) => (
+                <div
+                  key={item}
+                  className="h-[470px] animate-pulse overflow-hidden rounded-[18px] border border-[#e5e8ed] bg-white"
+                >
+                  <div className="h-[190px] bg-slate-100" />
 
-        {filteredCourses.length === 0 ? (
+                  <div className="space-y-4 p-5">
+                    <div className="h-5 w-24 rounded-full bg-slate-100" />
+                    <div className="h-6 w-4/5 rounded bg-slate-100" />
+                    <div className="h-10 w-full rounded bg-slate-100" />
+                    <div className="h-4 w-2/3 rounded bg-slate-100" />
+                    <div className="mt-8 h-20 rounded bg-slate-100" />
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {visibleCourses.map(
+              (course) => (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                />
+              ),
+            )}
+          </div>
+        )}
+
+        {!loading &&
+        filteredCourses.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
             <p className="text-sm font-bold text-slate-600">
-              Courses for this category will be
-              available soon.
+              Courses for this category
+              will be available soon.
             </p>
           </div>
         ) : null}
@@ -505,8 +702,12 @@ export function PopularCourses() {
           <div className="mt-7 flex items-center justify-center gap-2">
             <button
               type="button"
-              onClick={handlePrevious}
-              disabled={!canGoPrevious}
+              onClick={
+                handlePrevious
+              }
+              disabled={
+                !canGoPrevious
+              }
               aria-label="Previous courses"
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e0e5eb] bg-white text-[#607087] transition hover:border-red-200 hover:bg-red-50 hover:text-[#E13032] disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -523,13 +724,18 @@ export function PopularCourses() {
                   visibleCourses.length,
                 filteredCourses.length,
               )}{" "}
-              of {filteredCourses.length}
+              of{" "}
+              {filteredCourses.length}
             </span>
 
             <button
               type="button"
-              onClick={handleNext}
-              disabled={!canGoNext}
+              onClick={
+                handleNext
+              }
+              disabled={
+                !canGoNext
+              }
               aria-label="Next courses"
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e0e5eb] bg-white text-[#607087] transition hover:border-red-200 hover:bg-red-50 hover:text-[#E13032] disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -552,12 +758,13 @@ export function PopularCourses() {
 
             <div>
               <p className="text-sm font-extrabold text-[#172033]">
-                Looking for something specific?
+                Looking for something
+                specific?
               </p>
 
               <p className="mt-0.5 text-xs text-[#8b97a7]">
-                Browse the complete JobWay course
-                catalogue.
+                Browse the complete
+                JobWay course catalogue.
               </p>
             </div>
           </div>

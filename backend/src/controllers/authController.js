@@ -386,6 +386,151 @@ async function login(req, res) {
   }
 }
 
+/*
+ * GET CURRENT AUTHENTICATED USER
+ *
+ * The auth middleware places the authenticated
+ * user's id on req.user.userId.
+ */
+async function getMe(req, res) {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found",
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is inactive",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: sanitizeUser(user),
+    });
+  } catch (error) {
+    console.error(
+      "Get current user error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not load your profile",
+    });
+  }
+}
+
+/*
+ * UPDATE STUDENT/ADMIN PROFILE
+ *
+ * Editable:
+ * - name
+ * - phone
+ *
+ * Email, role and verification status are intentionally
+ * not editable through this endpoint.
+ */
+async function updateProfile(req, res) {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found",
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is inactive",
+      });
+    }
+
+    const {
+      name,
+      phone,
+    } = req.body;
+
+    if (name !== undefined) {
+      const normalizedName =
+        String(name).trim();
+
+      if (
+        normalizedName.length < 2 ||
+        normalizedName.length > 100
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Name must be between 2 and 100 characters",
+        });
+      }
+
+      user.name = normalizedName;
+    }
+
+    if (phone !== undefined) {
+      const normalizedPhone =
+        String(phone).trim();
+
+      if (!normalizedPhone) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Phone number cannot be empty",
+        });
+      }
+
+      user.phone = normalizedPhone;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: sanitizeUser(user),
+    });
+  } catch (error) {
+    console.error(
+      "Update profile error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not update your profile",
+    });
+  }
+}
+
 async function forgotPassword(
   req,
   res,
@@ -711,6 +856,8 @@ module.exports = {
   register,
   verifyEmail,
   login,
+  getMe,
+  updateProfile,
   forgotPassword,
   resetPassword,
   resendVerification,

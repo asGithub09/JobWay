@@ -16,6 +16,7 @@ import {
   Settings,
   X,
   UserCog,
+  Factory,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -74,21 +75,25 @@ const navigation = [
       },
     ],
   },
-  {
-    label: "Content",
-    items: [
-      {
-        label: "Courses",
-        href: "/admin/courses",
-        icon: BookOpen,
-        comingSoon: true,
-      },
-      {
-        label: "Exams",
-        href: "/admin/exams",
-        icon: ClipboardCheck,
-        comingSoon: true,
-      },
+   {
+  label: "Content",
+  items: [
+    {
+      label: "Courses",
+      href: "/admin/courses",
+      icon: BookOpen,
+    },
+    {
+      label: "Course Factory",
+      href: "/admin/course-factory",
+      icon: Factory,
+    },
+    {
+      label: "Exams",
+      href: "/admin/exams",
+      icon: ClipboardCheck,
+      comingSoon: true,
+    },
       {
         label: "Jobs",
         href: "/admin/jobs",

@@ -1,0 +1,906 @@
+﻿"use client";
+
+import Link from "next/link";
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Clock3,
+  FileText,
+  GraduationCap,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Settings,
+  ShoppingBag,
+  Target,
+  Trophy,
+  UserRound,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { useAuth } from "@/context/AuthContext";
+
+type SidebarItemProps = {
+  icon: React.ReactNode;
+  label: string;
+  href: string;
+  active?: boolean;
+  onClick?: () => void;
+};
+
+export default function DashboardPage() {
+  const {
+    user,
+    isAuthenticated,
+    signOut,
+  } = useAuth();
+
+  const [authReady, setAuthReady] =
+    useState(false);
+
+  const [mobileSidebarOpen, setMobileSidebarOpen] =
+    useState(false);
+
+  useEffect(() => {
+    setAuthReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!authReady) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      window.location.href = "/";
+      return;
+    }
+
+    if (user?.role === "admin") {
+      window.location.href = "/admin";
+    }
+  }, [
+    authReady,
+    isAuthenticated,
+    user,
+  ]);
+
+  if (!authReady) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#E13032]" />
+
+            <p className="mt-4 text-sm font-semibold text-slate-500">
+              Loading your account...
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (
+    !isAuthenticated ||
+    !user ||
+    user.role === "admin"
+  ) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="flex min-h-screen items-center justify-center">
+          <p className="text-sm font-semibold text-slate-500">
+            Redirecting...
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const firstName =
+    user.name?.trim().split(/\s+/)[0] ||
+    "Student";
+
+  return (
+    <main className="min-h-screen bg-slate-50">
+      {/* =====================================================
+          MAIN DASHBOARD
+         ===================================================== */}
+      <div>
+        {/* Desktop header */}
+        <header className="hidden border-b border-slate-200 bg-white lg:block">
+          <div className="flex h-[72px] items-center justify-between px-8">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                Student Portal
+              </p>
+
+              <h1 className="mt-1 text-xl font-extrabold text-slate-900">
+                My Dashboard
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Link
+                href="/"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-700 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-[#E13032]"
+              >
+                Browse JobWay
+
+                <ArrowRight
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                />
+              </Link>
+
+              <div className="flex h-10 items-center gap-2 rounded-xl bg-slate-50 px-3">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-50 text-[#E13032]">
+                  <UserRound
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  />
+                </div>
+
+                <span className="text-sm font-extrabold text-slate-800">
+                  {firstName}
+                </span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+          {/* Mobile page title */}
+          <div className="mb-5 lg:hidden">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+              Student Portal
+            </p>
+
+            <h1 className="mt-1 text-2xl font-extrabold text-slate-900">
+              My Dashboard
+            </h1>
+          </div>
+
+          {/* =================================================
+              WELCOME CARD
+             ================================================= */}
+          <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-red-50 blur-3xl" />
+
+            <div className="relative flex flex-col gap-5 p-5 sm:p-6 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-[#E13032]">
+                  <UserRound
+                    className="h-7 w-7"
+                    aria-hidden="true"
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-500">
+                    Welcome back,
+                  </p>
+
+                  <h2 className="mt-0.5 truncate text-2xl font-extrabold tracking-tight text-slate-900">
+                    {user.name}
+                  </h2>
+
+                  <p className="mt-1 truncate text-sm text-slate-500">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/courses"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#E13032] px-4 text-sm font-extrabold text-white shadow-sm transition-all hover:bg-[#C92426] hover:shadow-md"
+                >
+                  Start Learning
+
+                  <ArrowRight
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  />
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* =================================================
+              STATS
+             ================================================= */}
+          <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <DashboardStat
+              icon={
+                <BookOpen
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
+              }
+              label="My Courses"
+              value="0"
+              description="Courses enrolled"
+            />
+
+            <DashboardStat
+              icon={
+                <ClipboardList
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
+              }
+              label="Test Series"
+              value="0"
+              description="Test series joined"
+            />
+
+            <DashboardStat
+              icon={
+                <Trophy
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
+              }
+              label="Tests Attempted"
+              value="0"
+              description="Tests completed"
+            />
+
+            <DashboardStat
+              icon={
+                <Target
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
+              }
+              label="Average Score"
+              value="â€”"
+              description="Your performance"
+            />
+          </section>
+
+          {/* =================================================
+              MY LEARNING
+             ================================================= */}
+          <section className="mt-8">
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-extrabold text-slate-900">
+                  My Learning
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Continue your preparation from one
+                  place.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <DashboardActionCard
+                icon={
+                  <BookOpen
+                    className="h-6 w-6"
+                    aria-hidden="true"
+                  />
+                }
+                title="My Courses"
+                description="View enrolled courses and continue your preparation."
+                href="/courses"
+                action="View Courses"
+              />
+
+              <DashboardActionCard
+                icon={
+                  <ClipboardList
+                    className="h-6 w-6"
+                    aria-hidden="true"
+                  />
+                }
+                title="Mock Tests"
+                description="Practice with mock tests and improve your exam readiness."
+                href="/exams"
+                action="Explore Tests"
+              />
+
+              <DashboardActionCard
+                icon={
+                  <FileText
+                    className="h-6 w-6"
+                    aria-hidden="true"
+                  />
+                }
+                title="Study Resources"
+                description="Access study material and preparation resources."
+                href="/resources"
+                action="View Resources"
+              />
+            </div>
+          </section>
+
+          {/* =================================================
+              PERFORMANCE
+             ================================================= */}
+          <section className="mt-8">
+            <div className="mb-4">
+              <h2 className="text-xl font-extrabold text-slate-900">
+                Your Progress
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Your performance analytics will appear here
+                as you start learning.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-[#E13032]">
+                      <BarChart3
+                        className="h-5 w-5"
+                        aria-hidden="true"
+                      />
+                    </div>
+
+                    <h3 className="mt-4 text-base font-extrabold text-slate-900">
+                      Performance Analytics
+                    </h3>
+
+                    <p className="mt-1.5 text-sm leading-6 text-slate-500">
+                      Track your test scores, accuracy and
+                      preparation progress.
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
+                    Coming soon
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-[#E13032]">
+                      <Target
+                        className="h-5 w-5"
+                        aria-hidden="true"
+                      />
+                    </div>
+
+                    <h3 className="mt-4 text-base font-extrabold text-slate-900">
+                      Preparation Goals
+                    </h3>
+
+                    <p className="mt-1.5 text-sm leading-6 text-slate-500">
+                      Set your exam goals and monitor your
+                      preparation journey.
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
+                    Coming soon
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* =================================================
+              RECENT ACTIVITY
+             ================================================= */}
+          <section className="mt-8">
+            <div className="mb-4">
+              <h2 className="text-xl font-extrabold text-slate-900">
+                Recent Activity
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Your latest learning activity will appear
+                here.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                  <Clock3
+                    className="h-6 w-6"
+                    aria-hidden="true"
+                  />
+                </div>
+
+                <h3 className="mt-4 text-base font-extrabold text-slate-900">
+                  No activity yet
+                </h3>
+
+                <p className="mt-1 max-w-md text-sm leading-6 text-slate-500">
+                  Start a course or attempt a mock test and
+                  your learning activity will appear here.
+                </p>
+
+                <Link
+                  href="/courses"
+                  className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[#E13032] px-5 text-sm font-extrabold text-white shadow-sm transition-all hover:bg-[#C92426] hover:shadow-md"
+                >
+                  Start Learning
+
+                  <ArrowRight
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  />
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* =================================================
+              ACCOUNT INFORMATION
+             ================================================= */}
+          <section className="mt-8">
+            <div className="mb-4">
+              <h2 className="text-xl font-extrabold text-slate-900">
+                Account Information
+              </h2>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                <AccountInfo
+                  label="Full Name"
+                  value={user.name}
+                />
+
+                <AccountInfo
+                  label="Email Address"
+                  value={user.email}
+                />
+
+                <AccountInfo
+                  label="Phone Number"
+                  value={user.phone}
+                />
+
+                <AccountInfo
+                  label="Account Type"
+                  value="Student"
+                />
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/* =========================================================
+   STUDENT SIDEBAR
+   ========================================================= */
+
+function DashboardSidebar({
+  user,
+  activeItem,
+  onNavigate,
+  onLogout,
+}: {
+  user: {
+    name: string;
+    email: string;
+  };
+  activeItem: string;
+  onNavigate: () => void;
+  onLogout: () => void;
+}) {
+  const firstName =
+    user.name?.trim().split(/\s+/)[0] ||
+    "Student";
+
+  return (
+    <div className="flex h-full w-full flex-col">
+      {/* Brand */}
+      <div className="flex h-[72px] shrink-0 items-center border-b border-slate-100 px-5">
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className="group flex items-center gap-3"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-[#E13032] transition-transform duration-200 group-hover:scale-105">
+            <GraduationCap
+              className="h-5 w-5"
+              aria-hidden="true"
+            />
+          </div>
+
+          <div>
+            <div className="text-xl font-black tracking-tight text-slate-900">
+              JobWay
+            </div>
+
+            <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+              Student Portal
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Profile */}
+      <div className="px-4 pt-5">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#E13032] shadow-sm">
+              <UserRound
+                className="h-5 w-5"
+                aria-hidden="true"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <p className="truncate text-sm font-extrabold text-slate-900">
+                {firstName}
+              </p>
+
+              <p className="truncate text-xs font-medium text-slate-500">
+                Student Account
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav
+        aria-label="Student dashboard navigation"
+        className="mt-5 flex-1 overflow-y-auto px-3 pb-4"
+      >
+        <SidebarSectionLabel>
+          Overview
+        </SidebarSectionLabel>
+
+        <SidebarItem
+          icon={
+            <LayoutDashboard
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="Dashboard"
+          href="/dashboard"
+          active={
+            activeItem === "dashboard"
+          }
+          onClick={onNavigate}
+        />
+
+        <SidebarItem
+          icon={
+            <UserRound
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="My Profile"
+          href="/dashboard/profile"
+          onClick={onNavigate}
+        />
+
+        <SidebarSectionLabel>
+          My Preparation
+        </SidebarSectionLabel>
+
+        <SidebarItem
+          icon={
+            <BookOpen
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="My Courses"
+          href="/courses"
+          onClick={onNavigate}
+        />
+
+        <SidebarItem
+          icon={
+            <ClipboardList
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="Test Series"
+          href="/test-series"
+          onClick={onNavigate}
+        />
+
+        <SidebarItem
+          icon={
+            <Target
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="Mock Tests"
+          href="/exams"
+          onClick={onNavigate}
+        />
+
+        <SidebarItem
+          icon={
+            <FileText
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="Study Resources"
+          href="/resources"
+          onClick={onNavigate}
+        />
+
+        <SidebarSectionLabel>
+          Performance
+        </SidebarSectionLabel>
+
+        <SidebarItem
+          icon={
+            <BarChart3
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="My Performance"
+          href="/dashboard/performance"
+          onClick={onNavigate}
+        />
+
+        <SidebarItem
+          icon={
+            <Trophy
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="Achievements"
+          href="/dashboard/achievements"
+          onClick={onNavigate}
+        />
+
+        <SidebarSectionLabel>
+          Account
+        </SidebarSectionLabel>
+
+        <SidebarItem
+          icon={
+            <ShoppingBag
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="My Purchases"
+          href="/dashboard/purchases"
+          onClick={onNavigate}
+        />
+
+        <SidebarItem
+          icon={
+            <Settings
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="Settings"
+          href="/dashboard/settings"
+          onClick={onNavigate}
+        />
+      </nav>
+
+      {/* Bottom area */}
+      <div className="shrink-0 border-t border-slate-100 p-3">
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#E13032]"
+        >
+          <ArrowRight
+            className="h-[18px] w-[18px]"
+            aria-hidden="true"
+          />
+
+          Back to JobWay
+        </Link>
+
+        <button
+          type="button"
+          onClick={onLogout}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
+        >
+          <LogOut
+            className="h-[18px] w-[18px]"
+            aria-hidden="true"
+          />
+
+          Logout
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   SIDEBAR ITEM
+   ========================================================= */
+
+function SidebarItem({
+  icon,
+  label,
+  href,
+  active = false,
+  onClick,
+}: SidebarItemProps) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`group mb-1 flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-all duration-200 ${
+        active
+          ? "bg-[#E13032] text-white shadow-[0_5px_18px_rgba(225,48,50,0.18)]"
+          : "text-slate-600 hover:bg-red-50 hover:text-[#E13032]"
+      }`}
+    >
+      <span
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+          active
+            ? "bg-white/15 text-white"
+            : "bg-slate-50 text-slate-500 group-hover:bg-white group-hover:text-[#E13032]"
+        }`}
+      >
+        {icon}
+      </span>
+
+      <span className="flex-1 truncate">
+        {label}
+      </span>
+
+      <ChevronRight
+        className={`h-4 w-4 shrink-0 transition-all duration-200 ${
+          active
+            ? "text-white/70"
+            : "text-slate-300 opacity-0 group-hover:translate-x-0.5 group-hover:text-[#E13032] group-hover:opacity-100"
+        }`}
+        aria-hidden="true"
+      />
+    </Link>
+  );
+}
+
+/* =========================================================
+   SIDEBAR SECTION LABEL
+   ========================================================= */
+
+function SidebarSectionLabel({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <p className="mb-2 mt-5 px-3 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400 first:mt-0">
+      {children}
+    </p>
+  );
+}
+
+/* =========================================================
+   DASHBOARD STAT
+   ========================================================= */
+
+function DashboardStat({
+  icon,
+  label,
+  value,
+  description,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-bold text-slate-600">
+            {label}
+          </p>
+
+          <p className="mt-2 text-2xl font-extrabold text-slate-900">
+            {value}
+          </p>
+
+          <p className="mt-1 text-xs font-medium text-slate-400">
+            {description}
+          </p>
+        </div>
+
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-[#E13032]">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   DASHBOARD ACTION CARD
+   ========================================================= */
+
+function DashboardActionCard({
+  icon,
+  title,
+  description,
+  href,
+  action,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  href: string;
+  action: string;
+}) {
+  return (
+    <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-[#E13032]">
+        {icon}
+      </div>
+
+      <h3 className="mt-4 text-base font-extrabold text-slate-900">
+        {title}
+      </h3>
+
+      <p className="mt-2 flex-1 text-sm leading-6 text-slate-500">
+        {description}
+      </p>
+
+      <Link
+        href={href}
+        className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#E13032] hover:text-[#C92426]"
+      >
+        {action}
+
+        <ArrowRight
+          className="h-4 w-4"
+          aria-hidden="true"
+        />
+      </Link>
+    </div>
+  );
+}
+
+/* =========================================================
+   ACCOUNT INFORMATION
+   ========================================================= */
+
+function AccountInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="p-5">
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+
+      <p className="mt-1.5 truncate text-sm font-bold text-slate-800">
+        {value || "Not available"}
+      </p>
+    </div>
+  );
+}
