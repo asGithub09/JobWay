@@ -12,6 +12,7 @@ const courseRoutes = require("./routes/courseRoutes");
 const courseMaterialRoutes = require("./routes/courseMaterialRoutes");
 const courseImageRoutes = require("./routes/courseImageRoutes");
 const courseFactoryRoutes = require("./routes/courseFactoryRoutes");
+const courseCategoryRoutes = require("./routes/courseCategoryRoutes");
 
 const app = express();
 
@@ -121,6 +122,11 @@ app.use(
 app.use(
   "/api/courses",
   courseRoutes,
+);
+
+app.use(
+  "/api/course-categories",
+  courseCategoryRoutes,
 );
 
 app.use(

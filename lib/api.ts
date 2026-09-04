@@ -387,6 +387,23 @@ export interface CourseMutationResponse {
   message: string;
   course: Course;
 }
+export interface CourseCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  image: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourseCategoriesResponse {
+  success: boolean;
+  categories: CourseCategory[];
+}
 
 export interface DeleteCourseResponse {
   success: boolean;
@@ -516,6 +533,141 @@ export async function updateLeadStatus(
       body: JSON.stringify({
         status,
       }),
+    },
+  );
+}
+/* ============================================================
+   COURSE CATEGORIES
+   ============================================================ */
+
+/**
+ * Get all active course categories.
+ *
+ * Public endpoint used by student/public pages
+ * and the Admin Course Manager category selector.
+ */
+export async function getCourseCategories(): Promise<CourseCategoriesResponse> {
+  return request<CourseCategoriesResponse>(
+    "/course-categories",
+    {
+      method: "GET",
+    },
+  );
+}
+
+/**
+ * Get all course categories for Admin.
+ *
+ * Includes inactive categories.
+ */
+export async function getAdminCourseCategories(): Promise<CourseCategoriesResponse> {
+  const token = getAuthToken();
+
+  return request<CourseCategoriesResponse>(
+    "/course-categories/admin/all",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+/**
+ * Create a course category.
+ */
+export async function createCourseCategory(
+  payload: {
+    name: string;
+    slug?: string;
+    description?: string;
+    icon?: string;
+    image?: string;
+    isActive?: boolean;
+    displayOrder?: number;
+  },
+): Promise<{
+  success: boolean;
+  message: string;
+  category: CourseCategory;
+}> {
+  const token = getAuthToken();
+
+  return request<{
+    success: boolean;
+    message: string;
+    category: CourseCategory;
+  }>(
+    "/course-categories/admin",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/**
+ * Update a course category.
+ */
+export async function updateCourseCategory(
+  categoryId: string,
+  payload: {
+    name?: string;
+    slug?: string;
+    description?: string;
+    icon?: string;
+    image?: string;
+    isActive?: boolean;
+    displayOrder?: number;
+  },
+): Promise<{
+  success: boolean;
+  message: string;
+  category: CourseCategory;
+}> {
+  const token = getAuthToken();
+
+  return request<{
+    success: boolean;
+    message: string;
+    category: CourseCategory;
+  }>(
+    `/course-categories/admin/${categoryId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+/**
+ * Delete a course category.
+ */
+export async function deleteCourseCategory(
+  categoryId: string,
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const token = getAuthToken();
+
+  return request<{
+    success: boolean;
+    message: string;
+  }>(
+    `/course-categories/admin/${categoryId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
   );
 }

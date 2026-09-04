@@ -22,12 +22,10 @@ import {
   createCourse,
   deleteCourse,
   getAdminCourses,
-  getCourseCategories,
   toggleCoursePublish,
-  updateCourse,
-  uploadCourseImage,
+   updateCourse,
+uploadCourseImage,
   type Course,
-  type CourseCategory,
   type CourseSyllabusItem,
   type CreateCoursePayload,
 } from "@/lib/api";
@@ -71,8 +69,6 @@ const EMPTY_FORM: FormState = {
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<CourseCategory[]>([]);
-const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
@@ -85,8 +81,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
-  const [bannerUploadError, setBannerUploadError] = useState("");
+const [bannerUploadError, setBannerUploadError] = useState("");
   const [actionCourseId, setActionCourseId] = useState<string | null>(
     null,
   );
@@ -118,24 +113,8 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
     }
   }
 
-  async function loadCategories() {
-    try {
-      setCategoriesLoading(true);
-
-      const response = await getCourseCategories();
-
-      setCategories(response.categories);
-    } catch (err) {
-      console.error("Unable to load course categories:", err);
-      setCategories([]);
-    } finally {
-      setCategoriesLoading(false);
-    }
-  }
-
   useEffect(() => {
     loadCourses();
-    loadCategories();
   }, []);
 
   const filteredCourses = useMemo(() => {
@@ -159,7 +138,6 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
     setEditingCourse(null);
     setForm(EMPTY_FORM);
     setNotice("");
-    setBannerUploadError("");
     setFormOpen(true);
   }
 
@@ -185,7 +163,6 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
     });
 
     setNotice("");
-    setBannerUploadError("");
     setFormOpen(true);
   }
 
@@ -195,65 +172,8 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
     setFormOpen(false);
     setEditingCourse(null);
     setForm(EMPTY_FORM);
-    setBannerUploadError("");
   }
-
-  async function handleBannerUpload(
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    setBannerUploadError("");
-
-    const allowedTypes = new Set([
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ]);
-
-    if (!allowedTypes.has(file.type)) {
-      setBannerUploadError(
-        "Only JPG, PNG, and WEBP images are supported.",
-      );
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setBannerUploadError(
-        "Banner image must be smaller than 5 MB.",
-      );
-      event.target.value = "";
-      return;
-    }
-
-    try {
-      setUploadingBanner(true);
-
-      const response = await uploadCourseImage(file);
-
-      if (!response.imageUrl) {
-        throw new Error(
-          response.message || "Image upload failed.",
-        );
-      }
-
-      updateField("bannerImage", response.imageUrl);
-    } catch (error) {
-      setBannerUploadError(
-        error instanceof Error
-          ? error.message
-          : "Unable to upload banner image.",
-      );
-    } finally {
-      setUploadingBanner(false);
-      event.target.value = "";
-    }
-  }
+  
 
   function updateField<K extends keyof FormState>(
     field: K,
@@ -364,7 +284,7 @@ const [categoriesLoading, setCategoriesLoading] = useState(true);
         description: item.description.trim(),
       }))
       .filter((item) => item.title);
-console.log("COURSE SAVE - bannerImage:", form.bannerImage);
+
     const payload: CreateCoursePayload = {
       title: form.title.trim(),
       slug: form.slug.trim(),
@@ -415,7 +335,6 @@ console.log("COURSE SAVE - bannerImage:", form.bannerImage);
       setFormOpen(false);
       setEditingCourse(null);
       setForm(EMPTY_FORM);
-      setBannerUploadError("");
     } catch (err) {
       setError(
         err instanceof Error
@@ -917,7 +836,7 @@ console.log("COURSE SAVE - bannerImage:", form.bannerImage);
                       label="Category"
                       required
                     >
-                      <select
+                      <input
                         value={form.category}
                         onChange={(event) =>
                           updateField(
@@ -925,38 +844,9 @@ console.log("COURSE SAVE - bannerImage:", form.bannerImage);
                             event.target.value,
                           )
                         }
-                        disabled={categoriesLoading}
-                        className={`${inputClass} appearance-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-60`}
-                      >
-                        <option value="">
-                          {categoriesLoading
-                            ? "Loading categories..."
-                            : "Select a course category"}
-                        </option>
-
-                        {categories.map((category) => (
-                          <option
-                            key={category.id}
-                            value={category.name}
-                          >
-                            {category.name}
-                          </option>
-                        ))}
-
-                        {form.category &&
-                          !categories.some(
-                            (category) =>
-                              category.name === form.category,
-                          ) && (
-                            <option value={form.category}>
-                              {form.category} (Existing)
-                            </option>
-                          )}
-                      </select>
-
-                      <p className="mt-1.5 text-[10px] font-semibold text-slate-400">
-                        Select a category managed from the Course Categories section.
-                      </p>
+                        placeholder="SSC"
+                        className={inputClass}
+                      />
                     </Field>
 
                     <Field label="Level">
@@ -1005,73 +895,26 @@ console.log("COURSE SAVE - bannerImage:", form.bannerImage);
 
                   <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px]">
                     <Field
-                      label="Course Banner Image"
+                      label="Banner Image URL"
                     >
-                      <div className="space-y-3">
-                        <label
-                          className={[
-                            "flex cursor-pointer items-center justify-center",
-                            "gap-3 rounded-2xl border-2 border-dashed",
-                            "border-violet-200 bg-violet-50/40 px-5 py-6",
-                            "transition hover:border-violet-400 hover:bg-violet-50",
-                            uploadingBanner
-                              ? "pointer-events-none opacity-60"
-                              : "",
-                          ].join(" ")}
-                        >
-                          {uploadingBanner ? (
-                            <>
-                              <Loader2 className="h-5 w-5 animate-spin text-violet-600" />
-                              <span className="text-sm font-bold text-violet-700">
-                                Uploading banner...
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <ImageIcon className="h-5 w-5 text-violet-600" />
-                              <span className="text-sm font-bold text-violet-700">
-                                Choose Banner Image
-                              </span>
-                            </>
-                          )}
+                      <input
+                        type="url"
+                        value={form.bannerImage}
+                        onChange={(event) =>
+                          updateField(
+                            "bannerImage",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="https://..."
+                        className={inputClass}
+                      />
 
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            className="hidden"
-                            onChange={handleBannerUpload}
-                            disabled={uploadingBanner}
-                          />
-                        </label>
-
-                        <p className="text-[10px] font-semibold leading-5 text-slate-400">
-                          JPG, PNG or WEBP · Maximum 5 MB.
-                        </p>
-
-                        {form.bannerImage && (
-                          <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
-                            <p className="min-w-0 truncate text-[10px] font-semibold text-slate-500">
-                              Banner uploaded successfully
-                            </p>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateField("bannerImage", "")
-                              }
-                              className="shrink-0 rounded-lg px-2.5 py-1 text-[10px] font-black text-red-600 transition hover:bg-red-50"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        )}
-
-                        {bannerUploadError && (
-                          <p className="rounded-xl bg-red-50 px-3 py-2 text-[10px] font-bold text-red-600">
-                            {bannerUploadError}
-                          </p>
-                        )}
-                      </div>
+                      <p className="mt-1.5 text-[10px] font-semibold leading-5 text-slate-400">
+                        For now, paste an externally hosted
+                        image URL. We will add the actual
+                        image upload system next.
+                      </p>
                     </Field>
 
                     <div>
