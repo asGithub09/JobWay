@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -29,6 +29,7 @@ type DashboardSidebarItem =
   | "courses"
   | "test-series"
   | "mock-tests"
+  | "attempts"
   | "resources"
   | "performance"
   | "achievements"
@@ -56,6 +57,9 @@ function getActiveItem(pathname: string): DashboardSidebarItem {
     return "profile";
   }
 
+  if (pathname.startsWith("/dashboard/attempts")) {
+    return "attempts";
+  }
   if (pathname.startsWith("/dashboard/performance")) {
     return "performance";
   }
@@ -549,9 +553,11 @@ export default function StudentPortalShell({
       {/* =====================================================
           PAGE CONTENT
          ===================================================== */}
-      <div className="lg:pl-[260px]">
+<div className="lg:pl-[260px]">
         {children}
       </div>
     </div>
   );
 }
+
+

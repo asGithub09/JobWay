@@ -1,18 +1,20 @@
-require("dotenv").config();
+﻿require("dotenv").config();
+
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
+
 const connectDB = require("./config/db");
 
 const authRoutes = require("./routes/authRoutes");
 const leadRoutes = require("./routes/leadRoutes");
 const courseRoutes = require("./routes/courseRoutes");
 const courseMaterialRoutes = require("./routes/courseMaterialRoutes");
-const courseImageRoutes = require("./routes/courseImageRoutes");
 const courseFactoryRoutes = require("./routes/courseFactoryRoutes");
 const courseCategoryRoutes = require("./routes/courseCategoryRoutes");
+const examRoutes = require("./routes/examRoutes");
 
 const app = express();
 
@@ -35,20 +37,6 @@ app.use(
   }),
 );
 
-/*
- * Helmet security headers.
- *
- * IMPORTANT:
- * Course banner images are served from this backend
- * while the Next.js frontend runs on another origin/port.
- *
- * Example:
- * Frontend: http://localhost:3000
- * Backend:  http://localhost:5001
- *
- * Therefore the Cross-Origin-Resource-Policy must allow
- * cross-origin resources.
- */
 app.use(
   helmet({
     crossOriginResourcePolicy: {
@@ -60,7 +48,10 @@ app.use(
 app.use(
   express.json({
     limit: "1mb",
-    type: ["application/json", "application/*+json"],
+    type: [
+      "application/json",
+      "application/*+json",
+    ],
   }),
 );
 
@@ -72,15 +63,12 @@ app.use(
   }),
 );
 
-/*
- * Static uploaded files.
- *
- * Course images are stored in:
- * backend/uploads/course-banners/
- *
- * and are available at:
- * http://localhost:5001/uploads/course-banners/<filename>
- */
+app.use(cookieParser());
+
+/* =========================================================
+   STATIC UPLOADED FILES
+   ========================================================= */
+
 app.use(
   "/uploads",
   express.static(
@@ -125,18 +113,22 @@ app.use(
 );
 
 app.use(
-  "/api/course-categories",
-  courseCategoryRoutes,
-);
-
-app.use(
-  "/api/course-images",
-  courseImageRoutes,
+  "/api/course-materials",
+  courseMaterialRoutes,
 );
 
 app.use(
   "/api/course-factory",
   courseFactoryRoutes,
+);
+
+app.use(
+  "/api/course-categories",
+  courseCategoryRoutes,
+);
+app.use(
+  "/api/exams",
+  examRoutes,
 );
 
 /* =========================================================
@@ -163,7 +155,14 @@ app.use(
       error,
     );
 
-    if (error.code === "LIMIT_FILE_SIZE") {
+    /* -----------------------------------------------------
+       MULTER FILE SIZE ERROR
+       ----------------------------------------------------- */
+
+    if (
+      error.code ===
+      "LIMIT_FILE_SIZE"
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -171,15 +170,25 @@ app.use(
       });
     }
 
+    /* -----------------------------------------------------
+       COURSE MATERIAL FILE TYPE ERROR
+       ----------------------------------------------------- */
+
     if (
       error.message ===
-      "Only PDF and DOCX files are supported."
+        "Only PDF and DOCX files are allowed." ||
+      error.message ===
+        "Only PDF and DOCX files are supported."
     ) {
       return res.status(400).json({
         success: false,
         message: error.message,
       });
     }
+
+    /* -----------------------------------------------------
+       GENERIC SERVER ERROR
+       ----------------------------------------------------- */
 
     return res.status(500).json({
       success: false,
@@ -211,7 +220,11 @@ async function startServer() {
         );
 
         console.log(
-          "Course material upload API enabled",
+          "Course material API enabled",
+        );
+
+        console.log(
+          "Course material upload, access, download and delete routes enabled",
         );
 
         console.log(
@@ -219,7 +232,7 @@ async function startServer() {
         );
 
         console.log(
-          "Cross-origin course image serving enabled",
+          "Course Category API enabled",
         );
       },
     );

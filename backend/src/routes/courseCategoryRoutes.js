@@ -1,4 +1,9 @@
-const express = require("express");
+﻿const express = require("express");
+
+const {
+  authenticateToken,
+  authorizeAdmin,
+} = require("../middleware/authMiddleware");
 
 const {
   getActiveCategories,
@@ -8,16 +13,11 @@ const {
   deleteCategory,
 } = require("../controllers/courseCategoryController");
 
-const {
-  authenticateToken,
-  authorizeAdmin,
-} = require("../middleware/authMiddleware");
-
 const router = express.Router();
 
 /*
  * PUBLIC
- * Get active course categories.
+ * Get all active course categories.
  */
 router.get(
   "/",
@@ -26,7 +26,7 @@ router.get(
 
 /*
  * ADMIN
- * Get all categories, including inactive ones.
+ * Get all categories, including inactive categories.
  */
 router.get(
   "/admin/all",
@@ -37,7 +37,7 @@ router.get(
 
 /*
  * ADMIN
- * Create category.
+ * Create a category.
  */
 router.post(
   "/admin",
@@ -48,7 +48,7 @@ router.post(
 
 /*
  * ADMIN
- * Update category.
+ * Update a category.
  */
 router.patch(
   "/admin/:id",
@@ -59,7 +59,7 @@ router.patch(
 
 /*
  * ADMIN
- * Delete category.
+ * Delete a category.
  */
 router.delete(
   "/admin/:id",

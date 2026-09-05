@@ -39,7 +39,6 @@ async function request<T>(
 
   return data;
 }
-
 /* ============================================================
    AUTH TYPES
    ============================================================ */
@@ -98,7 +97,6 @@ export interface UpdateProfilePayload {
   name?: string;
   phone?: string;
 }
-
 /* ============================================================
    AUTH FUNCTIONS
    ============================================================ */
@@ -174,7 +172,6 @@ export async function resetPassword(
     },
   );
 }
-
 /* ============================================================
    CURRENT USER / PROFILE
    ============================================================ */
@@ -217,7 +214,6 @@ export async function updateProfile(
     body: JSON.stringify(payload),
   });
 }
-
 /* ============================================================
    LEAD GENERATION
    ============================================================ */
@@ -303,7 +299,6 @@ export interface GetLeadsResponse {
     totalPages: number;
   };
 }
-
 /* ============================================================
    COURSE TYPES
    ============================================================ */
@@ -409,7 +404,6 @@ export interface DeleteCourseResponse {
   success: boolean;
   message: string;
 }
-
 /* ============================================================
    AUTH TOKEN HELPER
    ============================================================ */
@@ -424,7 +418,6 @@ function getAuthToken(): string {
     ""
   );
 }
-
 /* ============================================================
    CREATE LEAD
    ============================================================ */
@@ -440,9 +433,8 @@ export async function createLead(
     },
   );
 }
-
 /* ============================================================
-   ADMIN — GET LEADS
+   ADMIN - GET LEADS
    ============================================================ */
 
 export async function getLeads(
@@ -506,9 +498,8 @@ export async function getLeads(
     },
   );
 }
-
 /* ============================================================
-   ADMIN — UPDATE LEAD STATUS
+   ADMIN - UPDATE LEAD STATUS
    ============================================================ */
 
 export interface UpdateLeadStatusResponse {
@@ -539,7 +530,6 @@ export async function updateLeadStatus(
 /* ============================================================
    COURSE CATEGORIES
    ============================================================ */
-
 /**
  * Get all active course categories.
  *
@@ -554,7 +544,6 @@ export async function getCourseCategories(): Promise<CourseCategoriesResponse> {
     },
   );
 }
-
 /**
  * Get all course categories for Admin.
  *
@@ -573,7 +562,6 @@ export async function getAdminCourseCategories(): Promise<CourseCategoriesRespon
     },
   );
 }
-
 /**
  * Create a course category.
  */
@@ -609,7 +597,6 @@ export async function createCourseCategory(
     },
   );
 }
-
 /**
  * Update a course category.
  */
@@ -646,7 +633,6 @@ export async function updateCourseCategory(
     },
   );
 }
-
 /**
  * Delete a course category.
  */
@@ -671,11 +657,9 @@ export async function deleteCourseCategory(
     },
   );
 }
-
 /* ============================================================
-   COURSES — PUBLIC
+   COURSES - PUBLIC
    ============================================================ */
-
 /**
  * Get all published courses for the
  * student/public website.
@@ -688,7 +672,6 @@ export async function getCourses(): Promise<GetCoursesResponse> {
     },
   );
 }
-
 /**
  * Get one published course by slug.
  */
@@ -702,11 +685,9 @@ export async function getCourse(
     },
   );
 }
-
 /* ============================================================
-   COURSES — ADMIN
+   COURSES - ADMIN
    ============================================================ */
-
 /**
  * Get all courses for the Admin Course Manager.
  *
@@ -725,7 +706,6 @@ export async function getAdminCourses(): Promise<GetCoursesResponse> {
     },
   );
 }
-
 /**
  * Create a course from the Admin Portal.
  */
@@ -745,7 +725,6 @@ export async function createCourse(
     },
   );
 }
-
 /**
  * Update an existing course.
  */
@@ -766,7 +745,6 @@ export async function updateCourse(
     },
   );
 }
-
 /**
  * Toggle course published/unpublished status.
  */
@@ -785,7 +763,6 @@ export async function toggleCoursePublish(
     },
   );
 }
-
 /**
  * Delete a course.
  */
@@ -804,9 +781,8 @@ export async function deleteCourse(
     },
   );
 }
-
 /* ============================================================
-   COURSE FACTORY — ADMIN
+   COURSE FACTORY - ADMIN
    ============================================================ */
 
 export type CourseDraftLesson = {
@@ -929,7 +905,6 @@ export type BuildCourseDraftResponse = {
   regenerated?: boolean;
   message?: string;
 };
-
 /**
  * Payload accepted by the Review Studio
  * when saving an edited draft.
@@ -941,7 +916,6 @@ export type UpdateCourseDraftPayload = {
   practice?: CourseDraftPractice[];
   sourceSections?: CourseDraftSourceSection[];
 };
-
 /**
  * Get all Course Factory drafts.
  *
@@ -967,7 +941,6 @@ export async function getCourseDrafts(
     },
   );
 }
-
 /**
  * Get one Course Factory draft.
  */
@@ -988,7 +961,6 @@ export async function getCourseDraft(
     },
   );
 }
-
 /**
  * Build a Course Factory draft from
  * uploaded source material.
@@ -1009,7 +981,6 @@ export async function buildCourseDraft(
     },
   );
 }
-
 /**
  * Save changes made to a Course Factory draft.
  */
@@ -1032,9 +1003,15 @@ export async function updateCourseDraft(
     },
   );
 }
+export type CourseMaterialCourse = {
+  id: string;
+  title: string;
+  slug?: string;
+};
+
 export type CourseMaterial = {
   id: string;
-  course: string;
+  course: string | CourseMaterialCourse;
   originalName: string;
   fileName: string;
   mimeType: string;
@@ -1108,7 +1085,7 @@ export async function uploadCourseImage(
   );
 }
 /* ============================================================
-   COURSE FACTORY — APPROVAL & PUBLISHING
+   COURSE FACTORY - APPROVAL & PUBLISHING
    ============================================================ */
 
 export type ApproveCourseDraftResponse = {
@@ -1116,7 +1093,6 @@ export type ApproveCourseDraftResponse = {
   draft?: CourseDraft;
   message?: string;
 };
-
 /**
  * Approve a Course Factory draft.
  *
@@ -1151,7 +1127,6 @@ export type PublishCourseDraftResponse = {
   };
   message?: string;
 };
-
 /**
  * Publish an approved Course Factory draft.
  *
@@ -1174,3 +1149,983 @@ export async function publishCourseDraft(
     },
   );
 }
+/* =========================================================
+   COURSE MATERIALS / STUDY RESOURCES
+   ========================================================= */
+
+export async function getCourseMaterials(): Promise<CourseMaterial[]> {
+  const token = getAuthToken();
+
+  return request<CourseMaterial[]>(
+    "/course-materials",
+    {
+      method: "GET",
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {},
+    },
+  );
+}
+
+export async function getAdminCourseMaterials(): Promise<CourseMaterial[]> {
+  const token = getAuthToken();
+
+  return request<CourseMaterial[]>(
+    "/course-materials/admin/all",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+export async function getCourseMaterial(
+  materialId: string,
+): Promise<CourseMaterial> {
+  const token = getAuthToken();
+
+  return request<CourseMaterial>(
+    `/course-materials/${materialId}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+export async function deleteCourseMaterial(
+  materialId: string,
+): Promise<{
+  success: boolean;
+  message?: string;
+}> {
+  const token = getAuthToken();
+
+  return request<{
+    success: boolean;
+    message?: string;
+  }>(
+    `/course-materials/${materialId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+export async function fetchCourseMaterialFile(
+  materialId: string,
+  mode: "open" | "download" = "open",
+): Promise<Blob> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error(
+      "You must be logged in to access this study material.",
+    );
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/course-materials/${materialId}/${mode}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      credentials: "include",
+    },
+  );
+
+  if (!response.ok) {
+    let message =
+      `Unable to ${mode} the study material.`;
+
+    try {
+      const data = await response.json();
+
+      if (
+        data &&
+        typeof data.message === "string"
+      ) {
+        message = data.message;
+      }
+    } catch {
+      // Ignore JSON parsing errors.
+    }
+
+    throw new Error(message);
+  }
+
+  return response.blob();
+}
+
+export async function openCourseMaterial(
+  materialId: string,
+): Promise<void> {
+  const blob =
+    await fetchCourseMaterialFile(
+      materialId,
+      "open",
+    );
+
+  const objectUrl =
+    URL.createObjectURL(blob);
+
+  const newWindow =
+    window.open(
+      objectUrl,
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+  if (!newWindow) {
+    URL.revokeObjectURL(objectUrl);
+
+    throw new Error(
+      "The browser blocked the resource window. Please allow pop-ups for JobWay.",
+    );
+  }
+
+  window.setTimeout(() => {
+    URL.revokeObjectURL(objectUrl);
+  }, 60_000);
+}
+
+export async function downloadCourseMaterial(
+  materialId: string,
+  fileName: string,
+): Promise<void> {
+  const blob =
+    await fetchCourseMaterialFile(
+      materialId,
+      "download",
+    );
+
+  const objectUrl =
+    URL.createObjectURL(blob);
+
+  const anchor =
+    document.createElement("a");
+
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  anchor.style.display = "none";
+
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+
+  window.setTimeout(() => {
+    URL.revokeObjectURL(objectUrl);
+  }, 1_000);
+}
+/* ============================================================
+   EXAMS / MOCK TESTS - ADMIN
+   ============================================================ */
+
+export interface Exam {
+  id: string;
+  name: string;
+  slug: string;
+  shortName?: string;
+  category: string;
+  description: string;
+  isPublished: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TestSeries {
+  id: string;
+  exam:
+    | string
+    | {
+        _id: string;
+        name?: string;
+        slug?: string;
+      };
+  title: string;
+  slug: string;
+  description: string;
+  accessType: "FREE" | "PREMIUM";
+  price: number;
+  discountPrice: number;
+  isPublished: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MockTest {
+  id: string;
+  testSeries:
+    | string
+    | {
+        _id: string;
+        title?: string;
+        slug?: string;
+      };
+  title: string;
+  slug: string;
+  description: string;
+  durationMinutes: number;
+  totalQuestions: number;
+  marksPerQuestion: number;
+  negativeMarking: number;
+  accessType: "FREE" | "PREMIUM";
+  isPublished: boolean;
+  instructions: string[];
+  attemptLimit: number;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MockTestOption {
+  key: string;
+  text: string;
+}
+
+export interface MockTestQuestion {
+  id: string;
+  mockTest: string;
+  questionText: string;
+  options: MockTestOption[];
+  correctAnswer?: string;
+  explanation?: string;
+  subject: string;
+  topic: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  order: number;
+}
+export interface MockTestAttemptAnswer {
+  question: string;
+  selectedAnswer: string | null;
+  markedForReview: boolean;
+}
+
+export interface MockTestAttempt {
+  id: string;
+  user: string;
+  mockTest: string;
+  status: "IN_PROGRESS" | "SUBMITTED" | "EXPIRED";
+  startedAt: string;
+  submittedAt: string | null;
+  expiresAt: string;
+  answers: MockTestAttemptAnswer[];
+  totalQuestions: number;
+  attemptedQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  unansweredQuestions: number;
+  score: number;
+  percentage: number;
+  questionReview?: MockTestQuestionReview[];
+  createdAt: string;
+  updatedAt: string;
+}
+export interface MockTestQuestionReview {
+  question: string;
+  questionText: string;
+  options: MockTestOption[];
+  selectedAnswer: "A" | "B" | "C" | "D" | null;
+  correctAnswer: "A" | "B" | "C" | "D";
+  markedForReview: boolean;
+  isCorrect: boolean;
+  explanation?: string;
+  subject?: string;
+  topic?: string;
+  difficulty?: "EASY" | "MEDIUM" | "HARD";
+  order: number;
+}
+export interface MockTestAttemptQuestion {
+  id: string;
+  questionText: string;
+  options: MockTestOption[];
+  explanation?: string;
+  subject?: string;
+  topic?: string;
+  difficulty?: "EASY" | "MEDIUM" | "HARD";
+  order: number;
+}
+
+export interface MockTestAttemptInfo {
+  id: string;
+  title: string;
+  slug: string;
+  durationMinutes: number;
+  totalQuestions: number;
+  marksPerQuestion: number;
+  negativeMarking: number;
+}
+
+export interface StartMockTestAttemptResponse {
+  success: boolean;
+  message: string;
+  resumed: boolean;
+  attempt: MockTestAttempt;
+  mockTest: MockTestAttemptInfo;
+  questions: MockTestAttemptQuestion[];
+}
+
+export interface SaveMockTestAnswerPayload {
+  questionId: string;
+  selectedAnswer: "A" | "B" | "C" | "D" | null;
+  markedForReview?: boolean;
+}
+
+export interface SaveMockTestAnswerResponse {
+  success: boolean;
+  message: string;
+  answer: {
+    question: string;
+    selectedAnswer: string | null;
+    markedForReview: boolean;
+  };
+  attemptedQuestions: number;
+  unansweredQuestions: number;
+  expiresAt: string;
+}
+
+export interface SubmitMockTestAttemptResponse {
+  success: boolean;
+  message: string;
+  attempt: MockTestAttempt;
+}
+
+export interface GetMockTestAttemptResponse {
+  success: boolean;
+  attempt: MockTestAttempt;
+  mockTest: MockTestAttemptInfo | null;
+}
+
+export interface GetMyMockTestAttemptsResponse {
+  success: boolean;
+  attempts: Array<
+    MockTestAttempt & {
+      mockTest: {
+        id: string;
+        title: string;
+        slug: string;
+        durationMinutes: number;
+        totalQuestions: number;
+        marksPerQuestion: number;
+        negativeMarking: number;
+        accessType: "FREE" | "PREMIUM";
+      } | null;
+    }
+  >;
+}
+export interface CreateExamPayload {
+  name: string;
+  slug?: string;
+  shortName?: string;
+  category: string;
+  description?: string;
+  isPublished?: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdateExamPayload {
+  name?: string;
+  slug?: string;
+  shortName?: string;
+  category?: string;
+  description?: string;
+  isPublished?: boolean;
+  sortOrder?: number;
+}
+
+export interface CreateTestSeriesPayload {
+  exam: string;
+  title: string;
+  slug?: string;
+  description?: string;
+  accessType?: "FREE" | "PREMIUM";
+  price?: number;
+  discountPrice?: number;
+  isPublished?: boolean;
+  sortOrder?: number;
+}
+
+export interface CreateMockTestPayload {
+  testSeries: string;
+  title: string;
+  slug?: string;
+  description?: string;
+  durationMinutes?: number;
+  marksPerQuestion?: number;
+  negativeMarking?: number;
+  accessType?: "FREE" | "PREMIUM";
+  isPublished?: boolean;
+  instructions?: string[];
+  attemptLimit?: number;
+  sortOrder?: number;
+}
+
+export interface CreateMockTestQuestionPayload {
+  mockTest: string;
+  questionText: string;
+  options: MockTestOption[];
+  correctAnswer: string;
+  explanation?: string;
+  subject?: string;
+  topic?: string;
+  difficulty?: "EASY" | "MEDIUM" | "HARD";
+  order?: number;
+}
+/* ============================================================
+   EXAMS - PUBLIC
+   ============================================================ */
+
+export async function getPublishedExams(): Promise<{
+  success: boolean;
+  exams: Exam[];
+}> {
+  return request<{
+    success: boolean;
+    exams: Exam[];
+  }>("/exams");
+}
+
+export async function getPublishedExam(
+  slug: string,
+): Promise<{
+  success: boolean;
+  exam: Exam;
+}> {
+  return request<{
+    success: boolean;
+    exam: Exam;
+  }>(`/exams/${encodeURIComponent(slug)}`);
+}
+/* ============================================================
+   EXAMS - ADMIN
+   ============================================================ */
+
+export async function getAdminExams(
+  token: string,
+): Promise<{
+  success: boolean;
+  exams: Exam[];
+}> {
+  return request<{
+    success: boolean;
+    exams: Exam[];
+  }>("/exams/admin/all", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export async function createExam(
+  token: string,
+  payload: CreateExamPayload,
+): Promise<{
+  success: boolean;
+  message: string;
+  exam: Exam;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+    exam: Exam;
+  }>("/exams/admin", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateExam(
+  token: string,
+  id: string,
+  payload: UpdateExamPayload,
+): Promise<{
+  success: boolean;
+  message: string;
+  exam: Exam;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+    exam: Exam;
+  }>(`/exams/admin/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+export async function deleteExam(
+  token: string,
+  id: string,
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+  }>(`/exams/admin/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+/* ============================================================
+   TEST SERIES - PUBLIC
+   ============================================================ */
+
+export async function getPublishedTestSeries(
+  examId: string,
+): Promise<{
+  success: boolean;
+  testSeries: TestSeries[];
+}> {
+  return request<{
+    success: boolean;
+    testSeries: TestSeries[];
+  }>(
+    `/exams/test-series/exam/${encodeURIComponent(
+      examId,
+    )}`,
+  );
+}
+/* ============================================================
+   TEST SERIES - ADMIN
+   ============================================================ */
+
+export async function getAdminTestSeries(
+  token: string,
+): Promise<{
+  success: boolean;
+  testSeries: TestSeries[];
+}> {
+  return request<{
+    success: boolean;
+    testSeries: TestSeries[];
+  }>("/exams/admin/test-series/all", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export async function createTestSeries(
+  token: string,
+  payload: CreateTestSeriesPayload,
+): Promise<{
+  success: boolean;
+  message: string;
+  testSeries: TestSeries;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+    testSeries: TestSeries;
+  }>("/exams/admin/test-series", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+export async function updateTestSeries(
+  token: string,
+  id: string,
+  payload: Partial<CreateTestSeriesPayload>,
+): Promise<{
+  success: boolean;
+  message: string;
+  testSeries: TestSeries;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+    testSeries: TestSeries;
+  }>(`/exams/admin/test-series/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteTestSeries(
+  token: string,
+  id: string,
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+  }>(`/exams/admin/test-series/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+/* ============================================================
+   MOCK TESTS - PUBLIC
+   ============================================================ */
+
+export async function getPublishedMockTests(
+  testSeriesId: string,
+): Promise<{
+  success: boolean;
+  mockTests: MockTest[];
+}> {
+  return request<{
+    success: boolean;
+    mockTests: MockTest[];
+  }>(
+    `/exams/mock-tests/series/${encodeURIComponent(
+      testSeriesId,
+    )}`,
+  );
+}
+
+export async function getPublishedMockTest(
+  slug: string,
+): Promise<{
+  success: boolean;
+  mockTest: MockTest;
+  questions: MockTestQuestion[];
+}> {
+  return request<{
+    success: boolean;
+    mockTest: MockTest;
+    questions: MockTestQuestion[];
+  }>(
+    `/exams/mock-tests/${encodeURIComponent(slug)}`,
+  );
+}
+/* ============================================================
+   MOCK TEST ATTEMPTS - STUDENT
+   ============================================================ */
+/**
+ * Start a new mock test attempt or resume an existing
+ * in-progress attempt for the authenticated student.
+ */
+export async function startMockTestAttempt(
+  mockTestId: string,
+): Promise<StartMockTestAttemptResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<StartMockTestAttemptResponse>(
+    "/exams/attempts/start",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        mockTestId,
+      }),
+    },
+  );
+}
+/**
+ * Save or update a student's answer.
+ */
+export async function saveMockTestAnswer(
+  attemptId: string,
+  payload: SaveMockTestAnswerPayload,
+): Promise<SaveMockTestAnswerResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<SaveMockTestAnswerResponse>(
+    `/exams/attempts/${encodeURIComponent(
+      attemptId,
+    )}/answer`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+/**
+ * Submit the mock test.
+ *
+ * The backend calculates the final score,
+ * correct answers, incorrect answers,
+ * unanswered questions and percentage.
+ */
+export async function submitMockTestAttempt(
+  attemptId: string,
+): Promise<SubmitMockTestAttemptResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<SubmitMockTestAttemptResponse>(
+    `/exams/attempts/${encodeURIComponent(
+      attemptId,
+    )}/submit`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+/**
+ * Load an authenticated student's own attempt.
+ */
+export async function getMockTestAttempt(
+  attemptId: string,
+): Promise<GetMockTestAttemptResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<GetMockTestAttemptResponse>(
+    `/exams/attempts/${encodeURIComponent(
+      attemptId,
+    )}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+/**
+ * Load all mock-test attempts belonging to the authenticated student.
+ */
+export async function getMyMockTestAttempts(): Promise<GetMyMockTestAttemptsResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<GetMyMockTestAttemptsResponse>(
+    "/exams/attempts/my",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+/* ============================================================
+   MOCK TESTS - ADMIN
+   ============================================================ */
+
+export async function getAdminMockTests(
+  token: string,
+): Promise<{
+  success: boolean;
+  mockTests: MockTest[];
+}> {
+  return request<{
+    success: boolean;
+    mockTests: MockTest[];
+  }>("/exams/admin/mock-tests/all", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export async function createMockTest(
+  token: string,
+  payload: CreateMockTestPayload,
+): Promise<{
+  success: boolean;
+  message: string;
+  mockTest: MockTest;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+    mockTest: MockTest;
+  }>("/exams/admin/mock-tests", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateMockTest(
+  token: string,
+  id: string,
+  payload: Partial<CreateMockTestPayload>,
+): Promise<{
+  success: boolean;
+  message: string;
+  mockTest: MockTest;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+    mockTest: MockTest;
+  }>(`/exams/admin/mock-tests/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteMockTest(
+  token: string,
+  id: string,
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+  }>(`/exams/admin/mock-tests/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+/* ============================================================
+   QUESTIONS - ADMIN
+   ============================================================ */
+
+export async function createMockTestQuestion(
+  token: string,
+  payload: CreateMockTestQuestionPayload,
+): Promise<{
+  success: boolean;
+  message: string;
+  question: MockTestQuestion;
+  totalQuestions: number;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+    question: MockTestQuestion;
+    totalQuestions: number;
+  }>("/exams/admin/questions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getAdminMockTestQuestions(
+  token: string,
+  mockTestId: string,
+): Promise<{
+  success: boolean;
+  questions: MockTestQuestion[];
+}> {
+  return request<{
+    success: boolean;
+    questions: MockTestQuestion[];
+  }>(
+    `/exams/admin/questions/mock-test/${encodeURIComponent(
+      mockTestId,
+    )}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+export async function updateMockTestQuestion(
+  token: string,
+  questionId: string,
+  payload: Partial<CreateMockTestQuestionPayload>,
+): Promise<{
+  success: boolean;
+  message: string;
+  question: MockTestQuestion;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+    question: MockTestQuestion;
+  }>(
+    `/exams/admin/questions/${encodeURIComponent(questionId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+export async function deleteMockTestQuestion(
+  token: string,
+  questionId: string,
+): Promise<{
+  success: boolean;
+  message: string;
+  totalQuestions: number;
+}> {
+  return request<{
+    success: boolean;
+    message: string;
+    totalQuestions: number;
+  }>(
+    `/exams/admin/questions/${encodeURIComponent(
+      questionId,
+    )}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+
+
+

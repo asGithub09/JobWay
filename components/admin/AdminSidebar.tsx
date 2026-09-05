@@ -98,7 +98,6 @@ const navigation = [
         label: "Exams",
         href: "/admin/exams",
         icon: ClipboardCheck,
-        comingSoon: true,
       },
       {
         label: "Jobs",

@@ -1,169 +1,211 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
-  ArrowRight,
-  BarChart3,
-  BookOpen,
+  ArrowLeft,
   ChevronRight,
-  ClipboardList,
-  FileText,
-  GraduationCap,
-  LayoutDashboard,
   LogOut,
-  Settings,
-  ShoppingBag,
-  Target,
-  Trophy,
-  UserRound,
+  X,
 } from "lucide-react";
 
-type DashboardUser = {
-  name: string;
-  email: string;
-};
+import { useAuth } from "@/context/AuthContext";
 
-export type DashboardSidebarItem =
-  | "dashboard"
-  | "profile"
-  | "courses"
-  | "test-series"
-  | "mock-tests"
-  | "resources"
-  | "performance"
-  | "achievements"
-  | "purchases"
-  | "settings";
-
-type DashboardSidebarProps = {
-  user: DashboardUser;
-  activeItem: DashboardSidebarItem;
-  onNavigate?: () => void;
-  onLogout: () => void;
-};
-
-type SidebarItemProps = {
-  icon: React.ReactNode;
+export type DashboardNavItem = {
   label: string;
   href: string;
-  active?: boolean;
-  onClick?: () => void;
+  icon: React.ReactNode;
+  exact?: boolean;
 };
 
-function SidebarSectionLabel({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export type DashboardNavSection = {
+  label: string;
+  items: DashboardNavItem[];
+};
+
+type DashboardSidebarProps = {
+  sections: DashboardNavSection[];
+  activeHref?: string;
+  onNavigate?: () => void;
+  onLogout?: () => void;
+  onClose?: () => void;
+  mobile?: boolean;
+  brandLabel?: string;
+  brandSubtitle?: string;
+};
+
+function isItemActive(
+  pathname: string,
+  item: DashboardNavItem,
+  activeHref?: string,
+) {
+  const currentPath = activeHref || pathname;
+
+  if (item.exact) {
+    return currentPath === item.href;
+  }
+
   return (
-    <p className="mb-2 mt-5 px-3 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400 first:mt-0">
-      {children}
-    </p>
+    currentPath === item.href ||
+    currentPath.startsWith(`${item.href}/`)
   );
 }
 
-function SidebarItem({
-  icon,
-  label,
-  href,
-  active = false,
-  onClick,
-}: SidebarItemProps) {
-  return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className={`group mb-1 flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-all duration-200 ${
-        active
-          ? "bg-[#E13032] text-white shadow-[0_5px_18px_rgba(225,48,50,0.18)]"
-          : "text-slate-600 hover:bg-red-50 hover:text-[#E13032]"
-      }`}
-    >
-      <span
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
-          active
-            ? "bg-white/15 text-white"
-            : "bg-slate-50 text-slate-500 group-hover:bg-white group-hover:text-[#E13032]"
-        }`}
-      >
-        {icon}
-      </span>
-
-      <span className="flex-1 truncate">{label}</span>
-
-      <ChevronRight
-        className={`h-4 w-4 shrink-0 transition-all duration-200 ${
-          active
-            ? "text-white/70"
-            : "text-slate-300 opacity-0 group-hover:translate-x-0.5 group-hover:text-[#E13032] group-hover:opacity-100"
-        }`}
-        aria-hidden="true"
-      />
-    </Link>
-  );
-}
-
-export default function DashboardSidebar({
-  user,
-  activeItem,
+export function DashboardSidebar({
+  sections,
+  activeHref,
   onNavigate,
   onLogout,
+  onClose,
+  mobile = false,
+  brandLabel = "JobWay",
+  brandSubtitle = "STUDENT PORTAL",
 }: DashboardSidebarProps) {
+  const pathname = usePathname();
+
+  const { user } = useAuth();
+
   const firstName =
-    user.name?.trim().split(/\s+/)[0] || "Student";
+    user?.name?.trim().split(/\s+/)[0] || "Student";
+
+  const initials =
+    user?.name
+      ?.trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("") || "S";
+
+  const roleLabel =
+    user?.role === "admin"
+      ? "ADMINISTRATOR"
+      : "STUDENT";
+
+  const handleNavigate = () => {
+    onNavigate?.();
+  };
+
+  const handleLogout = () => {
+    onLogout?.();
+  };
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-full min-h-0 w-full flex-col">
       {/* =====================================================
           BRAND
          ===================================================== */}
-      <div className="flex h-[72px] shrink-0 items-center border-b border-slate-100 px-5">
+
+      <div className="flex h-[76px] shrink-0 items-center border-b border-slate-200/70 px-5">
         <Link
           href="/"
-          onClick={onNavigate}
-          className="group flex items-center gap-3"
+          onClick={handleNavigate}
+          className="group flex min-w-0 items-center gap-3"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-[#E13032] transition-transform duration-200 group-hover:scale-105">
-            <GraduationCap
-              className="h-5 w-5"
-              aria-hidden="true"
-            />
-          </div>
+          <span
+            className="
+              flex
+              h-10
+              w-10
+              shrink-0
+              items-center
+              justify-center
+              rounded-xl
+              bg-gradient-to-br
+              from-[#E13032]
+              via-[#ef4444]
+              to-violet-600
+              text-sm
+              font-black
+              text-white
+              shadow-[0_10px_25px_rgba(225,48,50,0.22)]
+              transition-transform
+              duration-200
+              group-hover:scale-105
+            "
+          >
+            J
+          </span>
 
-          <div>
-            <div className="text-xl font-black tracking-tight text-slate-900">
-              JobWay
-            </div>
+          <span className="min-w-0">
+            <span className="block truncate text-[17px] font-black tracking-tight text-slate-950">
+              {brandLabel}
+            </span>
 
-            <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-              Student Portal
-            </div>
-          </div>
+            <span className="block truncate text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">
+              {brandSubtitle}
+            </span>
+          </span>
         </Link>
+
+        {mobile && (
+          <button
+            type="button"
+            aria-label="Close dashboard menu"
+            onClick={onClose}
+            className="
+              dashboard-focus-ring
+              ml-auto
+              flex
+              h-9
+              w-9
+              items-center
+              justify-center
+              rounded-xl
+              border
+              border-slate-200
+              bg-white
+              text-slate-500
+              transition
+              hover:border-red-200
+              hover:bg-red-50
+              hover:text-[#E13032]
+            "
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* =====================================================
-          STUDENT PROFILE
+          USER CARD
          ===================================================== */}
-      <div className="px-4 pt-5">
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+
+      <div className="px-4 pt-4">
+        <div className="dashboard-user-card rounded-2xl border border-white/80 bg-white/75 p-3 shadow-sm backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#E13032] shadow-sm">
-              <UserRound
-                className="h-5 w-5"
-                aria-hidden="true"
-              />
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-xl
+                bg-gradient-to-br
+                from-[#E13032]
+                to-violet-600
+                text-xs
+                font-black
+                text-white
+                shadow-[0_8px_18px_rgba(124,58,237,0.18)]
+              "
+            >
+              {initials}
             </div>
 
             <div className="min-w-0">
-              <p className="truncate text-sm font-extrabold text-slate-900">
+              <p className="truncate text-xs font-black text-slate-900">
                 {firstName}
               </p>
 
-              <p className="truncate text-xs font-medium text-slate-500">
-                Student Account
+              <p className="mt-0.5 truncate text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">
+                {roleLabel}
               </p>
             </div>
+
+            <span className="ml-auto h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.10)]" />
           </div>
         </div>
       </div>
@@ -171,185 +213,159 @@ export default function DashboardSidebar({
       {/* =====================================================
           NAVIGATION
          ===================================================== */}
-      <nav
-        aria-label="Student dashboard navigation"
-        className="mt-5 flex-1 overflow-y-auto px-3 pb-4"
-      >
-        <SidebarSectionLabel>
-          Overview
-        </SidebarSectionLabel>
 
-        <SidebarItem
-          icon={
-            <LayoutDashboard
-              className="h-[18px] w-[18px]"
-              aria-hidden="true"
-            />
-          }
-          label="Dashboard"
-          href="/dashboard"
-          active={activeItem === "dashboard"}
-          onClick={onNavigate}
-        />
+      <nav className="dashboard-scrollbar min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-5">
+        <div className="space-y-6">
+          {sections.map((section) => (
+            <section key={section.label}>
+              <div className="mb-2 px-3">
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">
+                  {section.label}
+                </p>
+              </div>
 
-        <SidebarItem
-          icon={
-            <UserRound
-              className="h-[18px] w-[18px]"
-              aria-hidden="true"
-            />
-          }
-          label="My Profile"
-          href="/dashboard/profile"
-          active={activeItem === "profile"}
-          onClick={onNavigate}
-        />
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const active = isItemActive(
+                    pathname,
+                    item,
+                    activeHref,
+                  );
 
-        <SidebarSectionLabel>
-          My Preparation
-        </SidebarSectionLabel>
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={handleNavigate}
+                      className={`
+                        dashboard-nav-item
+                        group
+                        relative
+                        flex
+                        min-h-[44px]
+                        items-center
+                        gap-3
+                        rounded-xl
+                        px-3
+                        text-sm
+                        font-bold
+                        transition-all
+                        duration-200
+                        ${
+                          active
+                            ? "bg-gradient-to-r from-red-50 via-white to-violet-50 text-[#E13032] shadow-[0_8px_20px_rgba(225,48,50,0.08)]"
+                            : "text-slate-600 hover:bg-white/80 hover:text-slate-950"
+                        }
+                      `}
+                    >
+                      {active && (
+                        <span className="absolute bottom-2 left-0 top-2 w-1 rounded-r-full bg-gradient-to-b from-[#E13032] to-violet-600" />
+                      )}
 
-        <SidebarItem
-          icon={
-            <BookOpen
-              className="h-[18px] w-[18px]"
-              aria-hidden="true"
-            />
-          }
-          label="My Courses"
-          href="/courses"
-          active={activeItem === "courses"}
-          onClick={onNavigate}
-        />
+                      <span
+                        className={`
+                          flex
+                          h-8
+                          w-8
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-lg
+                          transition-all
+                          duration-200
+                          ${
+                            active
+                              ? "bg-white text-[#E13032] shadow-sm"
+                              : "text-slate-400 group-hover:bg-slate-50 group-hover:text-slate-700"
+                          }
+                        `}
+                      >
+                        {item.icon}
+                      </span>
 
-        <SidebarItem
-          icon={
-            <ClipboardList
-              className="h-[18px] w-[18px]"
-              aria-hidden="true"
-            />
-          }
-          label="Test Series"
-          href="/test-series"
-          active={activeItem === "test-series"}
-          onClick={onNavigate}
-        />
+                      <span className="min-w-0 flex-1 truncate">
+                        {item.label}
+                      </span>
 
-        <SidebarItem
-          icon={
-            <Target
-              className="h-[18px] w-[18px]"
-              aria-hidden="true"
-            />
-          }
-          label="Mock Tests"
-          href="/exams"
-          active={activeItem === "mock-tests"}
-          onClick={onNavigate}
-        />
-
-        <SidebarItem
-          icon={
-            <FileText
-              className="h-[18px] w-[18px]"
-              aria-hidden="true"
-            />
-          }
-          label="Study Resources"
-          href="/resources"
-          active={activeItem === "resources"}
-          onClick={onNavigate}
-        />
-
-        <SidebarSectionLabel>
-          Performance
-        </SidebarSectionLabel>
-
-        <SidebarItem
-          icon={
-            <BarChart3
-              className="h-[18px] w-[18px]"
-              aria-hidden="true"
-            />
-          }
-          label="My Performance"
-          href="/dashboard/performance"
-          active={activeItem === "performance"}
-          onClick={onNavigate}
-        />
-
-        <SidebarItem
-          icon={
-            <Trophy
-              className="h-[18px] w-[18px]"
-              aria-hidden="true"
-            />
-          }
-          label="Achievements"
-          href="/dashboard/achievements"
-          active={activeItem === "achievements"}
-          onClick={onNavigate}
-        />
-
-        <SidebarSectionLabel>
-          Account
-        </SidebarSectionLabel>
-
-        <SidebarItem
-          icon={
-            <ShoppingBag
-              className="h-[18px] w-[18px]"
-              aria-hidden="true"
-            />
-          }
-          label="My Purchases"
-          href="/dashboard/purchases"
-          active={activeItem === "purchases"}
-          onClick={onNavigate}
-        />
-
-        <SidebarItem
-          icon={
-            <Settings
-              className="h-[18px] w-[18px]"
-              aria-hidden="true"
-            />
-          }
-          label="Settings"
-          href="/dashboard/settings"
-          active={activeItem === "settings"}
-          onClick={onNavigate}
-        />
+                      <ChevronRight
+                        className={`
+                          h-3.5
+                          w-3.5
+                          shrink-0
+                          transition-all
+                          duration-200
+                          ${
+                            active
+                              ? "translate-x-0 text-[#E13032] opacity-100"
+                              : "-translate-x-1 text-slate-300 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
+                          }
+                        `}
+                      />
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
       </nav>
 
       {/* =====================================================
-          BOTTOM AREA
+          FOOTER ACTIONS
          ===================================================== */}
-      <div className="shrink-0 border-t border-slate-100 p-3">
+
+      <div className="shrink-0 border-t border-slate-200/70 p-3">
         <Link
           href="/"
-          onClick={onNavigate}
-          className="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50 hover:text-[#E13032]"
+          onClick={handleNavigate}
+          className="
+            group
+            mb-1
+            flex
+            min-h-[42px]
+            items-center
+            gap-3
+            rounded-xl
+            px-3
+            text-xs
+            font-bold
+            text-slate-500
+            transition-all
+            hover:bg-white/80
+            hover:text-slate-900
+          "
         >
-          <ArrowRight
-            className="h-[18px] w-[18px]"
-            aria-hidden="true"
-          />
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-slate-200">
+            <ArrowLeft className="h-4 w-4" />
+          </span>
 
-          Back to JobWay
+          <span>Back to JobWay</span>
         </Link>
 
         <button
           type="button"
-          onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
+          onClick={handleLogout}
+          className="
+            group
+            flex
+            min-h-[42px]
+            w-full
+            items-center
+            gap-3
+            rounded-xl
+            px-3
+            text-xs
+            font-bold
+            text-rose-500
+            transition-all
+            hover:bg-rose-50
+          "
         >
-          <LogOut
-            className="h-[18px] w-[18px]"
-            aria-hidden="true"
-          />
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-500 transition group-hover:bg-rose-100">
+            <LogOut className="h-4 w-4" />
+          </span>
 
-          Logout
+          <span>Logout</span>
         </button>
       </div>
     </div>

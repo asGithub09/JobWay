@@ -1,0 +1,354 @@
+.dashboard-page {
+  --dashboard-primary: #e13032;
+  --dashboard-primary-dark: #b91c1c;
+  --dashboard-secondary: #7c3aed;
+  --dashboard-accent: #2563eb;
+  --dashboard-success: #059669;
+  --dashboard-warning: #d97706;
+  --dashboard-danger: #dc2626;
+
+  --dashboard-text: #0f172a;
+  --dashboard-muted: #64748b;
+
+  min-height: 100vh;
+  color: var(--dashboard-text);
+}
+
+/* =========================================================
+   PAGE BACKGROUND
+   ========================================================= */
+
+.dashboard-gradient-bg {
+  background:
+    radial-gradient(
+      circle at 0% 0%,
+      rgba(225, 48, 50, 0.08),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(124, 58, 237, 0.09),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 55% 55%,
+      rgba(37, 99, 235, 0.05),
+      transparent 28%
+    ),
+    linear-gradient(
+      135deg,
+      #f8fafc 0%,
+      #f8f9fd 50%,
+      #f5f7fb 100%
+    );
+}
+
+/* =========================================================
+   MAIN APPLICATION
+   ========================================================= */
+
+.dashboard-main {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/*
+  IMPORTANT:
+  Do NOT use max-width or margin:auto here.
+
+  The dashboard shell already determines the available
+  application width after the sidebar.
+
+  This keeps the content aligned directly with the sidebar
+  and prevents the large empty area seen previously.
+*/
+
+.dashboard-content {
+  width: 100%;
+  margin: 0;
+  padding: 28px 32px 48px;
+}
+
+/* =========================================================
+   GLASS CARDS
+   ========================================================= */
+
+.dashboard-glass {
+  border: 1px solid rgba(255, 255, 255, 0.78);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.84),
+      rgba(255, 255, 255, 0.58)
+    );
+
+  box-shadow:
+    0 14px 45px rgba(15, 23, 42, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.dashboard-glass-strong {
+  border: 1px solid rgba(255, 255, 255, 0.84);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.92),
+      rgba(255, 255, 255, 0.68)
+    );
+
+  box-shadow:
+    0 18px 55px rgba(15, 23, 42, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.dashboard-glass:hover,
+.dashboard-glass-strong:hover {
+  transform: translateY(-2px);
+
+  border-color: rgba(255, 255, 255, 1);
+
+  box-shadow:
+    0 24px 65px rgba(15, 23, 42, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+/* =========================================================
+   USER CARD
+   ========================================================= */
+
+.dashboard-user-card {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.dashboard-user-card:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.dashboard-header {
+  width: 100%;
+}
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+.dashboard-nav-item {
+  isolation: isolate;
+}
+
+.dashboard-nav-item:hover {
+  transform: translateX(2px);
+}
+
+/* =========================================================
+   PRIMARY GRADIENT
+   ========================================================= */
+
+.dashboard-gradient-primary {
+  background:
+    linear-gradient(
+      135deg,
+      #e13032 0%,
+      #d52935 42%,
+      #7c3aed 100%
+    );
+}
+
+/* =========================================================
+   SECTIONS
+   ========================================================= */
+
+.dashboard-section {
+  width: 100%;
+  margin-top: 30px;
+}
+
+.dashboard-section:first-child {
+  margin-top: 0;
+}
+
+.dashboard-section-heading {
+  margin-bottom: 14px;
+}
+
+/* =========================================================
+   GRID SYSTEM
+   ========================================================= */
+
+.dashboard-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-analytics-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.75fr)
+    minmax(320px, 1fr);
+  gap: 16px;
+}
+
+/* =========================================================
+   MOTION
+   ========================================================= */
+
+.dashboard-motion {
+  transition:
+    transform 200ms ease,
+    opacity 200ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.dashboard-motion:hover {
+  transform: translateY(-2px);
+}
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+.dashboard-focus-ring:focus-visible {
+  outline: 3px solid rgba(225, 48, 50, 0.18);
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+.dashboard-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.3);
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.5);
+}
+
+/* =========================================================
+   LARGE SCREENS
+   ========================================================= */
+
+@media (min-width: 1536px) {
+  .dashboard-content {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 1280px) {
+  .dashboard-content {
+    padding: 24px 24px 40px;
+  }
+
+  .dashboard-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =========================================================
+   SMALL TABLET
+   ========================================================= */
+
+@media (max-width: 1024px) {
+  .dashboard-content {
+    padding: 22px 20px 36px;
+  }
+
+  .dashboard-analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .dashboard-content {
+    padding: 18px 16px 32px;
+  }
+
+  .dashboard-stat-grid,
+  .dashboard-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-section {
+    margin-top: 24px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-motion,
+  .dashboard-glass,
+  .dashboard-glass-strong,
+  .dashboard-nav-item,
+  .dashboard-user-card {
+    animation: none !important;
+    transition: none !important;
+  }
+}
