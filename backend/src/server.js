@@ -12,6 +12,7 @@ const authRoutes = require("./routes/authRoutes");
 const leadRoutes = require("./routes/leadRoutes");
 const courseRoutes = require("./routes/courseRoutes");
 const courseMaterialRoutes = require("./routes/courseMaterialRoutes");
+const courseImageRoutes = require("./routes/courseImageRoutes");
 const courseFactoryRoutes = require("./routes/courseFactoryRoutes");
 const courseCategoryRoutes = require("./routes/courseCategoryRoutes");
 const examRoutes = require("./routes/examRoutes");
@@ -115,6 +116,10 @@ app.use(
 app.use(
   "/api/course-materials",
   courseMaterialRoutes,
+);
+app.use(
+  "/api/course-images",
+  courseImageRoutes,
 );
 
 app.use(
