@@ -326,3 +326,222 @@ body {
 padding-bottom: env(safe-area-inset-bottom);
 }
 }
+/* =========================================================
+   JOBWAY GLOBAL PRELOADER
+   ========================================================= */
+
+.jobway-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100dvh;
+
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(128, 14, 19, 0.14),
+      transparent 32%
+    ),
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #f8fafc 55%,
+      #f1f5f9
+    );
+
+  opacity: 1;
+  visibility: visible;
+
+  transition:
+    opacity 400ms ease,
+    visibility 400ms ease;
+}
+
+.jobway-preloader--fade {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.jobway-preloader__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  width: min(90%, 420px);
+
+  animation:
+    jobway-preloader-content-in
+    500ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+.jobway-preloader__logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+
+  color: #800e13;
+}
+
+.jobway-preloader__logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 58px;
+  height: 58px;
+
+  border-radius: 17px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #800e13,
+      #b91c1c
+    );
+
+  box-shadow:
+    0 14px 35px
+    rgba(128, 14, 19, 0.22);
+
+  animation:
+    jobway-preloader-logo-pulse
+    1.4s
+    ease-in-out
+    infinite;
+}
+
+.jobway-preloader__logo-text {
+  line-height: 1;
+}
+
+.jobway-preloader__loader {
+  position: relative;
+
+  width: min(280px, 75vw);
+  height: 4px;
+
+  margin-top: 32px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background:
+    rgba(128, 14, 19, 0.10);
+}
+
+.jobway-preloader__loader span {
+  position: absolute;
+  top: 0;
+  left: -40%;
+
+  width: 40%;
+  height: 100%;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      #800e13,
+      #dc2626,
+      #800e13
+    );
+
+  animation:
+    jobway-preloader-progress
+    1.15s
+    ease-in-out
+    infinite;
+}
+
+.jobway-preloader__message {
+  margin-top: 16px;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  letter-spacing: 0.01em;
+
+  color: #64748b;
+}
+
+@keyframes jobway-preloader-progress {
+  0% {
+    left: -40%;
+  }
+
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes jobway-preloader-logo-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.045);
+  }
+}
+
+@keyframes jobway-preloader-content-in {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .jobway-preloader__logo {
+    font-size: 31px;
+  }
+
+  .jobway-preloader__logo-mark {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+  }
+
+  .jobway-preloader__loader {
+    margin-top: 26px;
+  }
+
+  .jobway-preloader__message {
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jobway-preloader__content,
+  .jobway-preloader__logo-mark,
+  .jobway-preloader__loader span {
+    animation: none;
+  }
+
+  .jobway-preloader {
+    transition: opacity 200ms ease;
+  }
+}
