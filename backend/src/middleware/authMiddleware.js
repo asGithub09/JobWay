@@ -46,6 +46,72 @@ function authenticateToken(req, res, next) {
   }
 }
 
+/*
+ * Optional authentication middleware.
+ *
+ * Used by public routes that need to support both:
+ * - unauthenticated visitors for FREE content
+ * - authenticated students for PREMIUM/batch-protected content
+ *
+ * Invalid or missing tokens do not block the public route.
+ * The controller can check req.user when authentication is required.
+ */
+function optionalAuthenticateToken(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization || "";
+
+    if (!authHeader.startsWith("Bearer ")) {
+      return next();
+    }
+
+    const token = authHeader.substring(7).trim();
+
+    if (!token) {
+      return next();
+    }
+
+    const secret = process.env.JWT_SECRET;
+
+    if (!secret) {
+      console.error(
+        "JWT_SECRET is not configured for optional authentication",
+      );
+
+      return next();
+    }
+
+    try {
+      const decoded = jwt.verify(token, secret);
+
+      req.user = decoded;
+    } catch (error) {
+      /*
+       * This is intentionally not returned as a 401.
+       *
+       * These routes remain public because FREE exams,
+       * test series, and mock tests must continue to work
+       * without authentication.
+       *
+       * The protected controller logic will reject PREMIUM
+       * content when req.user is not a valid student.
+       */
+      console.error(
+        "Optional authentication error:",
+        error.message,
+      );
+    }
+
+    return next();
+  } catch (error) {
+    console.error(
+      "Optional authentication middleware error:",
+      error.message,
+    );
+
+    return next();
+  }
+}
+
 function authorizeAdmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({
@@ -66,5 +132,6 @@ function authorizeAdmin(req, res, next) {
 
 module.exports = {
   authenticateToken,
+  optionalAuthenticateToken,
   authorizeAdmin,
 };

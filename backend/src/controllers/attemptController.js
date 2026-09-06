@@ -3,6 +3,9 @@
 const TestAttempt = require("../models/TestAttempt");
 const MockTest = require("../models/MockTest");
 const Question = require("../models/Question");
+const {
+  studentCanAccessMockTest,
+} = require("../services/batchAccessService");
 
 /*
 |--------------------------------------------------------------------------
@@ -316,12 +319,47 @@ async function startAttempt(req, res) {
         isPublished: true,
       });
 
+    /*
+     * -------------------------------------------------------
+     * VERIFY MOCK TEST EXISTS
+     * -------------------------------------------------------
+     */
+
     if (!mockTest) {
       return res.status(404).json({
         success: false,
         message:
           "Published mock test not found",
       });
+    }
+
+    /*
+     * -------------------------------------------------------
+     * BATCH ACCESS CONTROL
+     * -------------------------------------------------------
+     *
+     * FREE mock tests preserve the existing public behavior.
+     *
+     * PREMIUM mock tests require the student's active batch
+     * to have access to the parent Test Series.
+     *
+     */
+
+    if (mockTest.accessType === "PREMIUM") {
+      const accessResult =
+        await studentCanAccessMockTest(
+          userId,
+          mockTest,
+        );
+
+      if (!accessResult.allowed) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "This mock test is available only to students assigned to its batch.",
+          reason: accessResult.reason,
+        });
+      }
     }
 
     /*
@@ -1418,10 +1456,9 @@ async function getAttempt(
 
 /*
 |--------------------------------------------------------------------------
-| EXPORTS
+| GET MY ATTEMPTS
 |--------------------------------------------------------------------------
 */
-
 
 async function getMyAttempts(req, res) {
   try {
@@ -1446,39 +1483,44 @@ async function getMyAttempts(req, res) {
           "title slug durationMinutes totalQuestions marksPerQuestion negativeMarking accessType",
       });
 
-    const formattedAttempts = await Promise.all(
-      attempts.map(async (attempt) => {
-        const questionReview =
-          await getQuestionReview(attempt);
+    const formattedAttempts =
+      await Promise.all(
+        attempts.map(async (attempt) => {
+          const questionReview =
+            await getQuestionReview(
+              attempt,
+            );
 
-        return {
-          ...sanitizeAttempt(attempt),
+          return {
+            ...sanitizeAttempt(attempt),
 
-          mockTest: attempt.mockTest
-            ? {
-                id: attempt.mockTest._id,
-                title: attempt.mockTest.title,
-                slug: attempt.mockTest.slug,
-                durationMinutes:
-                  attempt.mockTest.durationMinutes,
-                totalQuestions:
-                  attempt.mockTest.totalQuestions,
-                marksPerQuestion:
-                  attempt.mockTest.marksPerQuestion,
-                negativeMarking:
-                  attempt.mockTest.negativeMarking,
-                accessType:
-                  attempt.mockTest.accessType,
-              }
-            : null,
+            mockTest: attempt.mockTest
+              ? {
+                  id: attempt.mockTest._id,
+                  title:
+                    attempt.mockTest.title,
+                  slug:
+                    attempt.mockTest.slug,
+                  durationMinutes:
+                    attempt.mockTest.durationMinutes,
+                  totalQuestions:
+                    attempt.mockTest.totalQuestions,
+                  marksPerQuestion:
+                    attempt.mockTest.marksPerQuestion,
+                  negativeMarking:
+                    attempt.mockTest.negativeMarking,
+                  accessType:
+                    attempt.mockTest.accessType,
+                }
+              : null,
 
-          questionReview:
-            questionReview.length > 0
-              ? questionReview
-              : undefined,
-        };
-      }),
-    );
+            questionReview:
+              questionReview.length > 0
+                ? questionReview
+                : undefined,
+          };
+        }),
+      );
 
     return res.status(200).json({
       success: true,
@@ -1497,6 +1539,7 @@ async function getMyAttempts(req, res) {
     });
   }
 }
+
 module.exports = {
   startAttempt,
   saveAnswer,
@@ -1504,7 +1547,3 @@ module.exports = {
   getAttempt,
   getMyAttempts,
 };
-
-
-
-

@@ -2,6 +2,7 @@
 
 const {
   authenticateToken,
+  optionalAuthenticateToken,
   authorizeAdmin,
 } = require("../middleware/authMiddleware");
 
@@ -45,7 +46,7 @@ const router = express.Router();
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN â€” EXAMS
+| ADMIN — EXAMS
 |--------------------------------------------------------------------------
 */
 
@@ -79,7 +80,7 @@ router.delete(
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN â€” TEST SERIES
+| ADMIN — TEST SERIES
 |--------------------------------------------------------------------------
 */
 
@@ -113,7 +114,7 @@ router.delete(
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN â€” MOCK TESTS
+| ADMIN — MOCK TESTS
 |--------------------------------------------------------------------------
 */
 
@@ -147,7 +148,7 @@ router.delete(
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN â€” QUESTIONS
+| ADMIN — QUESTIONS
 |--------------------------------------------------------------------------
 */
 
@@ -181,7 +182,7 @@ router.delete(
 
 /*
 |--------------------------------------------------------------------------
-| STUDENT â€” MOCK TEST ATTEMPTS
+| STUDENT — MOCK TEST ATTEMPTS
 |--------------------------------------------------------------------------
 |
 | All attempt routes require an authenticated user.
@@ -189,6 +190,7 @@ router.delete(
 | POST  /api/exams/attempts/start
 | PATCH /api/exams/attempts/:id/answer
 | POST  /api/exams/attempts/:id/submit
+| GET   /api/exams/attempts/my
 | GET   /api/exams/attempts/:id
 |
 |--------------------------------------------------------------------------
@@ -221,14 +223,15 @@ router.post(
   submitAttempt,
 );
 
- /*
-  * GET MY ATTEMPTS
-  */
- router.get(
-   "/attempts/my",
-   authenticateToken,
-   getMyAttempts,
- );
+/*
+ * GET MY ATTEMPTS
+ */
+router.get(
+  "/attempts/my",
+  authenticateToken,
+  getMyAttempts,
+);
+
 /*
  * GET ATTEMPT
  */
@@ -240,34 +243,53 @@ router.get(
 
 /*
 |--------------------------------------------------------------------------
-| PUBLIC â€” TEST SERIES
+| PUBLIC — TEST SERIES
+|--------------------------------------------------------------------------
+|
+| Optional authentication is intentional.
+|
+| FREE test series remain publicly accessible.
+| PREMIUM test series can be filtered by the controller
+| using the authenticated student's active batch.
+|
 |--------------------------------------------------------------------------
 */
 
 router.get(
   "/test-series/exam/:examId",
+  optionalAuthenticateToken,
   getPublishedTestSeries,
 );
 
 /*
 |--------------------------------------------------------------------------
-| PUBLIC â€” MOCK TESTS
+| PUBLIC — MOCK TESTS
+|--------------------------------------------------------------------------
+|
+| Optional authentication is intentional.
+|
+| FREE mock tests remain publicly accessible.
+| PREMIUM mock tests can be protected by batch access
+| inside the controller.
+|
 |--------------------------------------------------------------------------
 */
 
 router.get(
   "/mock-tests/series/:testSeriesId",
+  optionalAuthenticateToken,
   getPublishedMockTests,
 );
 
 router.get(
   "/mock-tests/:slug",
+  optionalAuthenticateToken,
   getPublishedMockTest,
 );
 
 /*
 |--------------------------------------------------------------------------
-| PUBLIC â€” EXAMS
+| PUBLIC — EXAMS
 |--------------------------------------------------------------------------
 */
 
@@ -287,5 +309,3 @@ router.get(
 );
 
 module.exports = router;
-
-

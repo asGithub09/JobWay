@@ -1,0 +1,1799 @@
+﻿const Exam = require("../models/Exam");
+const TestSeries = require("../models/TestSeries");
+const MockTest = require("../models/MockTest");
+const Question = require("../models/Question");
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
+function createSlug(value) {
+  return value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function sanitizeExam(exam) {
+  return {
+    id: exam._id,
+    name: exam.name,
+    slug: exam.slug,
+    shortName: exam.shortName || "",
+    category: exam.category,
+    description: exam.description || "",
+    isPublished: exam.isPublished,
+    sortOrder: exam.sortOrder,
+    createdAt: exam.createdAt,
+    updatedAt: exam.updatedAt,
+  };
+}
+
+function sanitizeTestSeries(series) {
+  return {
+    id: series._id,
+    exam: series.exam,
+    title: series.title,
+    slug: series.slug,
+    description: series.description || "",
+    accessType: series.accessType,
+    price: series.price,
+    discountPrice: series.discountPrice,
+    isPublished: series.isPublished,
+    sortOrder: series.sortOrder,
+    createdAt: series.createdAt,
+    updatedAt: series.updatedAt,
+  };
+}
+
+function sanitizeMockTest(test) {
+  return {
+    id: test._id,
+    testSeries: test.testSeries,
+    title: test.title,
+    slug: test.slug,
+    description: test.description || "",
+    durationMinutes: test.durationMinutes,
+    totalQuestions: test.totalQuestions,
+    marksPerQuestion: test.marksPerQuestion,
+    negativeMarking: test.negativeMarking,
+    accessType: test.accessType,
+    isPublished: test.isPublished,
+    instructions: test.instructions || [],
+    attemptLimit: test.attemptLimit,
+    sortOrder: test.sortOrder,
+    createdAt: test.createdAt,
+    updatedAt: test.updatedAt,
+  };
+}
+
+function sanitizeQuestion(question) {
+  return {
+    id: question._id,
+    mockTest: question.mockTest,
+    questionText: question.questionText,
+    options: question.options,
+    subject: question.subject || "",
+    topic: question.topic || "",
+    difficulty: question.difficulty,
+    order: question.order,
+  };
+}
+
+function sanitizeAdminQuestion(question) {
+  return {
+    id: question._id,
+    mockTest: question.mockTest,
+    questionText: question.questionText,
+    options: question.options,
+    correctAnswer: question.correctAnswer,
+    explanation: question.explanation || "",
+    subject: question.subject || "",
+    topic: question.topic || "",
+    difficulty: question.difficulty,
+    order: question.order,
+    createdAt: question.createdAt,
+    updatedAt: question.updatedAt,
+  };
+}
+
+/* =========================================================
+   EXAMS — PUBLIC
+   ========================================================= */
+
+async function getPublishedExams(req, res) {
+  try {
+    const exams = await Exam.find({
+      isPublished: true,
+    }).sort({
+      sortOrder: 1,
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      exams: exams.map(sanitizeExam),
+    });
+  } catch (error) {
+    console.error("Get published exams error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load exams",
+    });
+  }
+}
+
+async function getPublishedExam(req, res) {
+  try {
+    const { slug } = req.params;
+
+    const exam = await Exam.findOne({
+      slug: slug.toLowerCase(),
+      isPublished: true,
+    });
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      exam: sanitizeExam(exam),
+    });
+  } catch (error) {
+    console.error("Get published exam error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load exam",
+    });
+  }
+}
+
+/* =========================================================
+   EXAMS — ADMIN
+   ========================================================= */
+
+async function getAdminExams(req, res) {
+  try {
+    const exams = await Exam.find().sort({
+      sortOrder: 1,
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      exams: exams.map(sanitizeExam),
+    });
+  } catch (error) {
+    console.error("Get admin exams error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load exams",
+    });
+  }
+}
+
+async function createExam(req, res) {
+  try {
+    const {
+      name,
+      slug,
+      shortName,
+      category,
+      description,
+      isPublished,
+      sortOrder,
+    } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Exam name is required",
+      });
+    }
+
+    if (!category || !category.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Exam category is required",
+      });
+    }
+
+    const generatedSlug = createSlug(slug || name);
+
+    if (!generatedSlug) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid exam slug is required",
+      });
+    }
+
+    const existingExam = await Exam.findOne({
+      slug: generatedSlug,
+    });
+
+    if (existingExam) {
+      return res.status(409).json({
+        success: false,
+        message: "An exam with this slug already exists",
+      });
+    }
+
+    const exam = await Exam.create({
+      name: name.trim(),
+      slug: generatedSlug,
+      shortName:
+        typeof shortName === "string"
+          ? shortName.trim()
+          : "",
+      category: category.trim(),
+      description:
+        typeof description === "string"
+          ? description.trim()
+          : "",
+      isPublished: Boolean(isPublished),
+      sortOrder: Number.isFinite(Number(sortOrder))
+        ? Number(sortOrder)
+        : 0,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Exam created successfully",
+      exam: sanitizeExam(exam),
+    });
+  } catch (error) {
+    console.error("Create exam error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "An exam with this slug already exists",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to create exam",
+    });
+  }
+}
+
+/* =========================================================
+   FIXED: EXAM UPDATE
+   ========================================================= */
+
+async function updateExam(req, res) {
+  try {
+    const { id } = req.params;
+
+    const exam = await Exam.findById(id);
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    const {
+      name,
+      slug,
+      shortName,
+      category,
+      description,
+      isPublished,
+      sortOrder,
+    } = req.body;
+
+    if (name !== undefined) {
+      if (
+        typeof name !== "string" ||
+        name.trim().length < 2
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Exam name must contain at least 2 characters",
+        });
+      }
+
+      exam.name = name.trim();
+    }
+
+    if (slug !== undefined) {
+      const nextSlug = createSlug(slug);
+
+      if (!nextSlug) {
+        return res.status(400).json({
+          success: false,
+          message: "A valid exam slug is required",
+        });
+      }
+
+      const duplicate = await Exam.findOne({
+        slug: nextSlug,
+        _id: {
+          $ne: id,
+        },
+      });
+
+      if (duplicate) {
+        return res.status(409).json({
+          success: false,
+          message: "An exam with this slug already exists",
+        });
+      }
+
+      exam.slug = nextSlug;
+    }
+
+    if (shortName !== undefined) {
+      exam.shortName =
+        typeof shortName === "string"
+          ? shortName.trim()
+          : exam.shortName;
+    }
+
+    if (category !== undefined) {
+      if (
+        typeof category !== "string" ||
+        !category.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Exam category is required",
+        });
+      }
+
+      exam.category = category.trim();
+    }
+
+    if (description !== undefined) {
+      exam.description =
+        typeof description === "string"
+          ? description.trim()
+          : exam.description;
+    }
+
+    if (isPublished !== undefined) {
+      exam.isPublished = Boolean(isPublished);
+    }
+
+    if (sortOrder !== undefined) {
+      const numericSortOrder = Number(sortOrder);
+
+      if (!Number.isFinite(numericSortOrder)) {
+        return res.status(400).json({
+          success: false,
+          message: "Sort order must be a valid number",
+        });
+      }
+
+      exam.sortOrder = numericSortOrder;
+    }
+
+    await exam.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Exam updated successfully",
+      exam: sanitizeExam(exam),
+    });
+  } catch (error) {
+    console.error("Update exam error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "An exam with this slug already exists",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update exam",
+    });
+  }
+}
+
+async function deleteExam(req, res) {
+  try {
+    const { id } = req.params;
+
+    const exam = await Exam.findById(id);
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    const seriesCount = await TestSeries.countDocuments({
+      exam: id,
+    });
+
+    if (seriesCount > 0) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This exam cannot be deleted because it has test series. Delete its test series first.",
+      });
+    }
+
+    await Exam.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Exam deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete exam error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete exam",
+    });
+  }
+}
+
+/* =========================================================
+   TEST SERIES — PUBLIC
+   ========================================================= */
+
+async function getPublishedTestSeries(req, res) {
+  try {
+    const { examId } = req.params;
+
+    const exam = await Exam.findOne({
+      _id: examId,
+      isPublished: true,
+    });
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    const series = await TestSeries.find({
+      exam: examId,
+      isPublished: true,
+    }).sort({
+      sortOrder: 1,
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      testSeries: series.map(sanitizeTestSeries),
+    });
+  } catch (error) {
+    console.error(
+      "Get published test series error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load test series",
+    });
+  }
+}
+
+/* =========================================================
+   TEST SERIES — ADMIN
+   ========================================================= */
+
+async function getAdminTestSeries(req, res) {
+  try {
+    const series = await TestSeries.find()
+      .populate("exam", "name slug")
+      .sort({
+        sortOrder: 1,
+        createdAt: -1,
+      });
+
+    return res.status(200).json({
+      success: true,
+      testSeries: series.map(sanitizeTestSeries),
+    });
+  } catch (error) {
+    console.error(
+      "Get admin test series error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load test series",
+    });
+  }
+}
+
+async function createTestSeries(req, res) {
+  try {
+    const {
+      exam,
+      title,
+      slug,
+      description,
+      accessType,
+      price,
+      discountPrice,
+      isPublished,
+      sortOrder,
+    } = req.body;
+
+    if (!exam) {
+      return res.status(400).json({
+        success: false,
+        message: "Exam is required",
+      });
+    }
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Test series title is required",
+      });
+    }
+
+    const parentExam = await Exam.findById(exam);
+
+    if (!parentExam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    const generatedSlug = createSlug(slug || title);
+
+    if (!generatedSlug) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid test series slug is required",
+      });
+    }
+
+    const existingSeries = await TestSeries.findOne({
+      slug: generatedSlug,
+    });
+
+    if (existingSeries) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "A test series with this slug already exists",
+      });
+    }
+
+    const series = await TestSeries.create({
+      exam,
+      title: title.trim(),
+      slug: generatedSlug,
+      description:
+        typeof description === "string"
+          ? description.trim()
+          : "",
+      accessType:
+        accessType === "PREMIUM"
+          ? "PREMIUM"
+          : "FREE",
+      price: Number.isFinite(Number(price))
+        ? Number(price)
+        : 0,
+      discountPrice: Number.isFinite(Number(discountPrice))
+        ? Number(discountPrice)
+        : 0,
+      isPublished: Boolean(isPublished),
+      sortOrder: Number.isFinite(Number(sortOrder))
+        ? Number(sortOrder)
+        : 0,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Test series created successfully",
+      testSeries: sanitizeTestSeries(series),
+    });
+  } catch (error) {
+    console.error(
+      "Create test series error:",
+      error,
+    );
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "A test series with this slug already exists",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to create test series",
+    });
+  }
+}
+
+async function updateTestSeries(req, res) {
+  try {
+    const { id } = req.params;
+
+    const series = await TestSeries.findById(id);
+
+    if (!series) {
+      return res.status(404).json({
+        success: false,
+        message: "Test series not found",
+      });
+    }
+
+    const {
+      exam,
+      title,
+      slug,
+      description,
+      accessType,
+      price,
+      discountPrice,
+      isPublished,
+      sortOrder,
+    } = req.body;
+
+    if (exam !== undefined) {
+      const parentExam = await Exam.findById(exam);
+
+      if (!parentExam) {
+        return res.status(404).json({
+          success: false,
+          message: "Exam not found",
+        });
+      }
+
+      series.exam = exam;
+    }
+
+    if (title !== undefined) {
+      if (
+        typeof title !== "string" ||
+        title.trim().length < 2
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Test series title must contain at least 2 characters",
+        });
+      }
+
+      series.title = title.trim();
+    }
+
+    if (slug !== undefined) {
+      const nextSlug = createSlug(slug);
+
+      if (!nextSlug) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "A valid test series slug is required",
+        });
+      }
+
+      const duplicate = await TestSeries.findOne({
+        slug: nextSlug,
+        _id: {
+          $ne: id,
+        },
+      });
+
+      if (duplicate) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "A test series with this slug already exists",
+        });
+      }
+
+      series.slug = nextSlug;
+    }
+
+    if (description !== undefined) {
+      series.description =
+        typeof description === "string"
+          ? description.trim()
+          : series.description;
+    }
+
+    if (accessType !== undefined) {
+      if (!["FREE", "PREMIUM"].includes(accessType)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Access type must be FREE or PREMIUM",
+        });
+      }
+
+      series.accessType = accessType;
+    }
+
+    if (price !== undefined) {
+      const numericPrice = Number(price);
+
+      if (
+        !Number.isFinite(numericPrice) ||
+        numericPrice < 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Price must be a valid non-negative number",
+        });
+      }
+
+      series.price = numericPrice;
+    }
+
+    if (discountPrice !== undefined) {
+      const numericDiscountPrice =
+        Number(discountPrice);
+
+      if (
+        !Number.isFinite(numericDiscountPrice) ||
+        numericDiscountPrice < 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Discount price must be a valid non-negative number",
+        });
+      }
+
+      series.discountPrice = numericDiscountPrice;
+    }
+
+    if (isPublished !== undefined) {
+      series.isPublished = Boolean(isPublished);
+    }
+
+    if (sortOrder !== undefined) {
+      const numericSortOrder = Number(sortOrder);
+
+      if (!Number.isFinite(numericSortOrder)) {
+        return res.status(400).json({
+          success: false,
+          message: "Sort order must be a valid number",
+        });
+      }
+
+      series.sortOrder = numericSortOrder;
+    }
+
+    await series.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Test series updated successfully",
+      testSeries: sanitizeTestSeries(series),
+    });
+  } catch (error) {
+    console.error(
+      "Update test series error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update test series",
+    });
+  }
+}
+
+async function deleteTestSeries(req, res) {
+  try {
+    const { id } = req.params;
+
+    const series = await TestSeries.findById(id);
+
+    if (!series) {
+      return res.status(404).json({
+        success: false,
+        message: "Test series not found",
+      });
+    }
+
+    const mockTestCount = await MockTest.countDocuments({
+      testSeries: id,
+    });
+
+    if (mockTestCount > 0) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This test series cannot be deleted because it has mock tests. Delete its mock tests first.",
+      });
+    }
+
+    await TestSeries.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Test series deleted successfully",
+    });
+  } catch (error) {
+    console.error(
+      "Delete test series error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete test series",
+    });
+  }
+}
+
+/* =========================================================
+   MOCK TESTS — PUBLIC
+   ========================================================= */
+
+async function getPublishedMockTests(req, res) {
+  try {
+    const { testSeriesId } = req.params;
+
+    const series = await TestSeries.findOne({
+      _id: testSeriesId,
+      isPublished: true,
+    });
+
+    if (!series) {
+      return res.status(404).json({
+        success: false,
+        message: "Test series not found",
+      });
+    }
+
+    const tests = await MockTest.find({
+      testSeries: testSeriesId,
+      isPublished: true,
+    }).sort({
+      sortOrder: 1,
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      mockTests: tests.map(sanitizeMockTest),
+    });
+  } catch (error) {
+    console.error(
+      "Get published mock tests error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load mock tests",
+    });
+  }
+}
+
+async function getPublishedMockTest(req, res) {
+  try {
+    const { slug } = req.params;
+
+    const test = await MockTest.findOne({
+      slug: slug.toLowerCase(),
+      isPublished: true,
+    });
+
+    if (!test) {
+      return res.status(404).json({
+        success: false,
+        message: "Mock test not found",
+      });
+    }
+
+    const questions = await Question.find({
+      mockTest: test._id,
+    }).sort({
+      order: 1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      mockTest: sanitizeMockTest(test),
+      questions: questions.map(sanitizeQuestion),
+    });
+  } catch (error) {
+    console.error(
+      "Get published mock test error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load mock test",
+    });
+  }
+}
+/* =========================================================
+   MOCK TESTS — ADMIN
+   ========================================================= */
+
+async function getAdminMockTests(req, res) {
+  try {
+    const tests = await MockTest.find()
+      .populate(
+        "testSeries",
+        "title slug",
+      )
+      .sort({
+        sortOrder: 1,
+        createdAt: -1,
+      });
+
+    return res.status(200).json({
+      success: true,
+      mockTests: tests.map(sanitizeMockTest),
+    });
+  } catch (error) {
+    console.error(
+      "Get admin mock tests error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load mock tests",
+    });
+  }
+}
+
+async function createMockTest(req, res) {
+  try {
+    const {
+      testSeries,
+      title,
+      slug,
+      description,
+      durationMinutes,
+      marksPerQuestion,
+      negativeMarking,
+      accessType,
+      isPublished,
+      instructions,
+      attemptLimit,
+      sortOrder,
+    } = req.body;
+
+    if (!testSeries) {
+      return res.status(400).json({
+        success: false,
+        message: "Test series is required",
+      });
+    }
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Mock test title is required",
+      });
+    }
+
+    const parentSeries = await TestSeries.findById(
+      testSeries,
+    );
+
+    if (!parentSeries) {
+      return res.status(404).json({
+        success: false,
+        message: "Test series not found",
+      });
+    }
+
+    const generatedSlug = createSlug(slug || title);
+
+    if (!generatedSlug) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid mock test slug is required",
+      });
+    }
+
+    const existingTest = await MockTest.findOne({
+      slug: generatedSlug,
+    });
+
+    if (existingTest) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "A mock test with this slug already exists",
+      });
+    }
+
+    const test = await MockTest.create({
+      testSeries,
+      title: title.trim(),
+      slug: generatedSlug,
+      description:
+        typeof description === "string"
+          ? description.trim()
+          : "",
+      durationMinutes:
+        Number.isFinite(Number(durationMinutes)) &&
+        Number(durationMinutes) > 0
+          ? Number(durationMinutes)
+          : 60,
+      marksPerQuestion:
+        Number.isFinite(Number(marksPerQuestion)) &&
+        Number(marksPerQuestion) >= 0
+          ? Number(marksPerQuestion)
+          : 1,
+      negativeMarking:
+        Number.isFinite(Number(negativeMarking)) &&
+        Number(negativeMarking) >= 0
+          ? Number(negativeMarking)
+          : 0,
+      accessType:
+        accessType === "PREMIUM"
+          ? "PREMIUM"
+          : "FREE",
+      isPublished: Boolean(isPublished),
+      instructions: Array.isArray(instructions)
+        ? instructions.filter(
+            (item) =>
+              typeof item === "string" &&
+              item.trim(),
+          )
+        : [],
+      attemptLimit:
+        Number.isFinite(Number(attemptLimit)) &&
+        Number(attemptLimit) >= 0
+          ? Number(attemptLimit)
+          : 0,
+      sortOrder:
+        Number.isFinite(Number(sortOrder))
+          ? Number(sortOrder)
+          : 0,
+      totalQuestions: 0,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Mock test created successfully",
+      mockTest: sanitizeMockTest(test),
+    });
+  } catch (error) {
+    console.error(
+      "Create mock test error:",
+      error,
+    );
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "A mock test with this slug already exists",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to create mock test",
+    });
+  }
+}
+
+async function updateMockTest(req, res) {
+  try {
+    const { id } = req.params;
+
+    const test = await MockTest.findById(id);
+
+    if (!test) {
+      return res.status(404).json({
+        success: false,
+        message: "Mock test not found",
+      });
+    }
+
+    const {
+      testSeries,
+      title,
+      slug,
+      description,
+      durationMinutes,
+      marksPerQuestion,
+      negativeMarking,
+      accessType,
+      isPublished,
+      instructions,
+      attemptLimit,
+      sortOrder,
+    } = req.body;
+
+    if (testSeries !== undefined) {
+      const parentSeries =
+        await TestSeries.findById(testSeries);
+
+      if (!parentSeries) {
+        return res.status(404).json({
+          success: false,
+          message: "Test series not found",
+        });
+      }
+
+      test.testSeries = testSeries;
+    }
+
+    if (title !== undefined) {
+      if (
+        typeof title !== "string" ||
+        title.trim().length < 2
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Mock test title must contain at least 2 characters",
+        });
+      }
+
+      test.title = title.trim();
+    }
+
+    if (slug !== undefined) {
+      const nextSlug = createSlug(slug);
+
+      if (!nextSlug) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "A valid mock test slug is required",
+        });
+      }
+
+      const duplicate = await MockTest.findOne({
+        slug: nextSlug,
+        _id: {
+          $ne: id,
+        },
+      });
+
+      if (duplicate) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "A mock test with this slug already exists",
+        });
+      }
+
+      test.slug = nextSlug;
+    }
+
+    if (description !== undefined) {
+      test.description =
+        typeof description === "string"
+          ? description.trim()
+          : test.description;
+    }
+
+    if (durationMinutes !== undefined) {
+      const value = Number(durationMinutes);
+
+      if (!Number.isFinite(value) || value <= 0) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Duration must be a positive number",
+        });
+      }
+
+      test.durationMinutes = value;
+    }
+
+    if (marksPerQuestion !== undefined) {
+      const value = Number(marksPerQuestion);
+
+      if (!Number.isFinite(value) || value < 0) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Marks per question must be a valid non-negative number",
+        });
+      }
+
+      test.marksPerQuestion = value;
+    }
+
+    if (negativeMarking !== undefined) {
+      const value = Number(negativeMarking);
+
+      if (!Number.isFinite(value) || value < 0) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Negative marking must be a valid non-negative number",
+        });
+      }
+
+      test.negativeMarking = value;
+    }
+
+    if (accessType !== undefined) {
+      if (!["FREE", "PREMIUM"].includes(accessType)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Access type must be FREE or PREMIUM",
+        });
+      }
+
+      test.accessType = accessType;
+    }
+
+    if (isPublished !== undefined) {
+      test.isPublished = Boolean(isPublished);
+    }
+
+    if (instructions !== undefined) {
+      if (!Array.isArray(instructions)) {
+        return res.status(400).json({
+          success: false,
+          message: "Instructions must be an array",
+        });
+      }
+
+      test.instructions = instructions.filter(
+        (item) =>
+          typeof item === "string" &&
+          item.trim(),
+      );
+    }
+
+    if (attemptLimit !== undefined) {
+      const value = Number(attemptLimit);
+
+      if (!Number.isFinite(value) || value < 0) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Attempt limit must be a valid non-negative number",
+        });
+      }
+
+      test.attemptLimit = value;
+    }
+
+    if (sortOrder !== undefined) {
+      const value = Number(sortOrder);
+
+      if (!Number.isFinite(value)) {
+        return res.status(400).json({
+          success: false,
+          message: "Sort order must be a valid number",
+        });
+      }
+
+      test.sortOrder = value;
+    }
+
+    await test.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Mock test updated successfully",
+      mockTest: sanitizeMockTest(test),
+    });
+  } catch (error) {
+    console.error(
+      "Update mock test error:",
+      error,
+    );
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "A mock test with this slug already exists",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update mock test",
+    });
+  }
+}
+
+async function deleteMockTest(req, res) {
+  try {
+    const { id } = req.params;
+
+    const test = await MockTest.findById(id);
+
+    if (!test) {
+      return res.status(404).json({
+        success: false,
+        message: "Mock test not found",
+      });
+    }
+
+    const questionCount = await Question.countDocuments({
+      mockTest: id,
+    });
+
+    if (questionCount > 0) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This mock test cannot be deleted because it has questions. Delete its questions first.",
+      });
+    }
+
+    await MockTest.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Mock test deleted successfully",
+    });
+  } catch (error) {
+    console.error(
+      "Delete mock test error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete mock test",
+    });
+  }
+}
+
+/* =========================================================
+   QUESTIONS — ADMIN
+   ========================================================= */
+
+async function createQuestion(req, res) {
+  try {
+    const {
+      mockTest,
+      questionText,
+      options,
+      correctAnswer,
+      explanation,
+      subject,
+      topic,
+      difficulty,
+      order,
+    } = req.body;
+
+    if (!mockTest) {
+      return res.status(400).json({
+        success: false,
+        message: "Mock test is required",
+      });
+    }
+
+    if (!questionText || !questionText.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Question text is required",
+      });
+    }
+
+    if (!Array.isArray(options) || options.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "At least two question options are required",
+      });
+    }
+
+    if (
+      !correctAnswer ||
+      typeof correctAnswer !== "string"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Correct answer is required",
+      });
+    }
+
+    const parentTest = await MockTest.findById(
+      mockTest,
+    );
+
+    if (!parentTest) {
+      return res.status(404).json({
+        success: false,
+        message: "Mock test not found",
+      });
+    }
+
+    const normalizedOptions = options
+      .filter(
+        (option) =>
+          option &&
+          typeof option.key === "string" &&
+          typeof option.text === "string" &&
+          option.key.trim() &&
+          option.text.trim(),
+      )
+      .map((option) => ({
+        key: option.key.trim(),
+        text: option.text.trim(),
+      }));
+
+    if (normalizedOptions.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "At least two valid question options are required",
+      });
+    }
+
+    const validAnswer = normalizedOptions.some(
+      (option) =>
+        option.key === correctAnswer.trim(),
+    );
+
+    if (!validAnswer) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Correct answer must match one of the option keys",
+      });
+    }
+
+    const question = await Question.create({
+      mockTest,
+      questionText: questionText.trim(),
+      options: normalizedOptions,
+      correctAnswer: correctAnswer.trim(),
+      explanation:
+        typeof explanation === "string"
+          ? explanation.trim()
+          : "",
+      subject:
+        typeof subject === "string"
+          ? subject.trim()
+          : "",
+      topic:
+        typeof topic === "string"
+          ? topic.trim()
+          : "",
+      difficulty:
+        ["EASY", "MEDIUM", "HARD"].includes(
+          difficulty,
+        )
+          ? difficulty
+          : "MEDIUM",
+      order:
+        Number.isFinite(Number(order))
+          ? Number(order)
+          : 0,
+    });
+
+    const questionCount =
+      await Question.countDocuments({
+        mockTest,
+      });
+
+    parentTest.totalQuestions = questionCount;
+
+    await parentTest.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Question created successfully",
+      question: sanitizeAdminQuestion(question),
+      totalQuestions: questionCount,
+    });
+  } catch (error) {
+    console.error(
+      "Create question error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to create question",
+    });
+  }
+}
+
+async function getAdminQuestions(req, res) {
+  try {
+    const { mockTestId } = req.params;
+
+    const questions = await Question.find({
+      mockTest: mockTestId,
+    }).sort({
+      order: 1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      questions: questions.map(
+        sanitizeAdminQuestion,
+      ),
+    });
+  } catch (error) {
+    console.error(
+      "Get admin questions error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load questions",
+    });
+  }
+}
+async function updateQuestion(req, res) {
+  try {
+    const { id } = req.params;
+
+    const question = await Question.findById(id);
+
+    if (!question) {
+      return res.status(404).json({
+        success: false,
+        message: "Question not found",
+      });
+    }
+
+    const {
+      questionText,
+      options,
+      correctAnswer,
+      explanation,
+      subject,
+      topic,
+      difficulty,
+      order,
+    } = req.body;
+
+    if (questionText !== undefined) {
+      if (
+        typeof questionText !== "string" ||
+        !questionText.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Question text is required",
+        });
+      }
+
+      question.questionText =
+        questionText.trim();
+    }
+
+    if (options !== undefined) {
+      if (
+        !Array.isArray(options) ||
+        options.length < 2
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "At least two question options are required",
+        });
+      }
+
+      const normalizedOptions = options
+        .filter(
+          (option) =>
+            option &&
+            typeof option.key === "string" &&
+            typeof option.text === "string" &&
+            option.key.trim() &&
+            option.text.trim(),
+        )
+        .map((option) => ({
+          key: option.key.trim(),
+          text: option.text.trim(),
+        }));
+
+      if (normalizedOptions.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "At least two valid question options are required",
+        });
+      }
+
+      question.options = normalizedOptions;
+    }
+
+    if (correctAnswer !== undefined) {
+      if (
+        typeof correctAnswer !== "string" ||
+        !correctAnswer.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Correct answer is required",
+        });
+      }
+
+      const validAnswer = question.options.some(
+        (option) =>
+          option.key === correctAnswer.trim(),
+      );
+
+      if (!validAnswer) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Correct answer must match one of the option keys",
+        });
+      }
+
+      question.correctAnswer =
+        correctAnswer.trim();
+    }
+
+    if (explanation !== undefined) {
+      question.explanation =
+        typeof explanation === "string"
+          ? explanation.trim()
+          : question.explanation;
+    }
+
+    if (subject !== undefined) {
+      question.subject =
+        typeof subject === "string"
+          ? subject.trim()
+          : question.subject;
+    }
+
+    if (topic !== undefined) {
+      question.topic =
+        typeof topic === "string"
+          ? topic.trim()
+          : question.topic;
+    }
+
+    if (difficulty !== undefined) {
+      if (
+        !["EASY", "MEDIUM", "HARD"].includes(
+          difficulty,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Difficulty must be EASY, MEDIUM, or HARD",
+        });
+      }
+
+      question.difficulty = difficulty;
+    }
+
+    if (order !== undefined) {
+      const numericOrder = Number(order);
+
+      if (!Number.isFinite(numericOrder)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Question order must be a valid number",
+        });
+      }
+
+      question.order = numericOrder;
+    }
+
+    await question.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Question updated successfully",
+      question: sanitizeAdminQuestion(question),
+    });
+  } catch (error) {
+    console.error(
+      "Update question error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update question",
+    });
+  }
+}
+
+async function deleteQuestion(req, res) {
+  try {
+    const { id } = req.params;
+
+    const question = await Question.findById(id);
+
+    if (!question) {
+      return res.status(404).json({
+        success: false,
+        message: "Question not found",
+      });
+    }
+
+    const mockTestId = question.mockTest;
+
+    await Question.findByIdAndDelete(id);
+
+    const questionCount =
+      await Question.countDocuments({
+        mockTest: mockTestId,
+      });
+
+    await MockTest.findByIdAndUpdate(
+      mockTestId,
+      {
+        totalQuestions: questionCount,
+      },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Question deleted successfully",
+      totalQuestions: questionCount,
+    });
+  } catch (error) {
+    console.error(
+      "Delete question error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete question",
+    });
+  }
+}
+
+/* =========================================================
+   EXPORTS
+   ========================================================= */
+
+module.exports = {
+  getPublishedExams,
+  getPublishedExam,
+  getAdminExams,
+  createExam,
+  updateExam,
+  deleteExam,
+
+  getPublishedTestSeries,
+  getAdminTestSeries,
+  createTestSeries,
+  updateTestSeries,
+  deleteTestSeries,
+
+  getPublishedMockTests,
+  getPublishedMockTest,
+  getAdminMockTests,
+  createMockTest,
+  updateMockTest,
+  deleteMockTest,
+
+  createQuestion,
+  getAdminQuestions,
+  updateQuestion,
+  deleteQuestion,
+};

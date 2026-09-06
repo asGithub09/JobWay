@@ -1,0 +1,687 @@
+﻿const Exam = require("../models/Exam");
+const TestSeries = require("../models/TestSeries");
+const MockTest = require("../models/MockTest");
+const Question = require("../models/Question");
+
+const {
+  studentCanAccessTestSeries,
+} = require("../services/batchAccessService");
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
+function createSlug(value) {
+  return value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function sanitizeExam(exam) {
+  return {
+    id: exam._id,
+    name: exam.name,
+    slug: exam.slug,
+    shortName: exam.shortName || "",
+    category: exam.category,
+    description: exam.description || "",
+    isPublished: exam.isPublished,
+    sortOrder: exam.sortOrder,
+    createdAt: exam.createdAt,
+    updatedAt: exam.updatedAt,
+  };
+}
+
+function sanitizeTestSeries(series) {
+  return {
+    id: series._id,
+    exam: series.exam,
+    title: series.title,
+    slug: series.slug,
+    description: series.description || "",
+    accessType: series.accessType,
+    price: series.price,
+    discountPrice: series.discountPrice,
+    isPublished: series.isPublished,
+    sortOrder: series.sortOrder,
+    createdAt: series.createdAt,
+    updatedAt: series.updatedAt,
+  };
+}
+
+function sanitizeMockTest(test) {
+  return {
+    id: test._id,
+    testSeries: test.testSeries,
+    title: test.title,
+    slug: test.slug,
+    description: test.description || "",
+    durationMinutes: test.durationMinutes,
+    totalQuestions: test.totalQuestions,
+    marksPerQuestion: test.marksPerQuestion,
+    negativeMarking: test.negativeMarking,
+    accessType: test.accessType,
+    isPublished: test.isPublished,
+    instructions: test.instructions || [],
+    attemptLimit: test.attemptLimit,
+    sortOrder: test.sortOrder,
+    createdAt: test.createdAt,
+    updatedAt: test.updatedAt,
+  };
+}
+
+function sanitizeQuestion(question) {
+  return {
+    id: question._id,
+    mockTest: question.mockTest,
+    questionText: question.questionText,
+    options: question.options,
+    subject: question.subject || "",
+    topic: question.topic || "",
+    difficulty: question.difficulty,
+    order: question.order,
+  };
+}
+
+function sanitizeAdminQuestion(question) {
+  return {
+    id: question._id,
+    mockTest: question.mockTest,
+    questionText: question.questionText,
+    options: question.options,
+    correctAnswer: question.correctAnswer,
+    explanation: question.explanation || "",
+    subject: question.subject || "",
+    topic: question.topic || "",
+    difficulty: question.difficulty,
+    order: question.order,
+    createdAt: question.createdAt,
+    updatedAt: question.updatedAt,
+  };
+}
+
+/* =========================================================
+   EXAMS â€” PUBLIC
+   ========================================================= */
+
+async function getPublishedExams(req, res) {
+  try {
+    const exams = await Exam.find({
+      isPublished: true,
+    }).sort({
+      sortOrder: 1,
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      exams: exams.map(sanitizeExam),
+    });
+  } catch (error) {
+    console.error("Get published exams error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load exams",
+    });
+  }
+}
+
+async function getPublishedExam(req, res) {
+  try {
+    const { slug } = req.params;
+
+    const exam = await Exam.findOne({
+      slug: slug.toLowerCase(),
+      isPublished: true,
+    });
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      exam: sanitizeExam(exam),
+    });
+  } catch (error) {
+    console.error("Get published exam error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load exam",
+    });
+  }
+}
+
+/* =========================================================
+   EXAMS â€” ADMIN
+   ========================================================= */
+
+async function getAdminExams(req, res) {
+  try {
+    const exams = await Exam.find().sort({
+      sortOrder: 1,
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      exams: exams.map(sanitizeExam),
+    });
+  } catch (error) {
+    console.error("Get admin exams error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load exams",
+    });
+  }
+}
+
+async function createExam(req, res) {
+  try {
+    const {
+      name,
+      slug,
+      shortName,
+      category,
+      description,
+      isPublished,
+      sortOrder,
+    } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Exam name is required",
+      });
+    }
+
+    if (!category || !category.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Exam category is required",
+      });
+    }
+
+    const generatedSlug = createSlug(slug || name);
+
+    if (!generatedSlug) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid exam slug is required",
+      });
+    }
+
+    const existingExam = await Exam.findOne({
+      slug: generatedSlug,
+    });
+
+    if (existingExam) {
+      return res.status(409).json({
+        success: false,
+        message: "An exam with this slug already exists",
+      });
+    }
+
+    const exam = await Exam.create({
+      name: name.trim(),
+      slug: generatedSlug,
+      shortName:
+        typeof shortName === "string"
+          ? shortName.trim()
+          : "",
+      category: category.trim(),
+      description:
+        typeof description === "string"
+          ? description.trim()
+          : "",
+      isPublished: Boolean(isPublished),
+      sortOrder: Number.isFinite(Number(sortOrder))
+        ? Number(sortOrder)
+        : 0,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Exam created successfully",
+      exam: sanitizeExam(exam),
+    });
+  } catch (error) {
+    console.error("Create exam error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "An exam with this slug already exists",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to create exam",
+    });
+  }
+}
+
+/* =========================================================
+   FIXED: EXAM UPDATE
+   ========================================================= */
+
+async function updateExam(req, res) {
+  try {
+    const { id } = req.params;
+
+    const exam = await Exam.findById(id);
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    const {
+      name,
+      slug,
+      shortName,
+      category,
+      description,
+      isPublished,
+      sortOrder,
+    } = req.body;
+
+    if (name !== undefined) {
+      if (
+        typeof name !== "string" ||
+        name.trim().length < 2
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Exam name must contain at least 2 characters",
+        });
+      }
+
+      exam.name = name.trim();
+    }
+
+    if (slug !== undefined) {
+      const nextSlug = createSlug(slug);
+
+      if (!nextSlug) {
+        return res.status(400).json({
+          success: false,
+          message: "A valid exam slug is required",
+        });
+      }
+
+      const duplicate = await Exam.findOne({
+        slug: nextSlug,
+        _id: {
+          $ne: id,
+        },
+      });
+
+      if (duplicate) {
+        return res.status(409).json({
+          success: false,
+          message: "An exam with this slug already exists",
+        });
+      }
+
+      exam.slug = nextSlug;
+    }
+
+    if (shortName !== undefined) {
+      exam.shortName =
+        typeof shortName === "string"
+          ? shortName.trim()
+          : exam.shortName;
+    }
+
+    if (category !== undefined) {
+      if (
+        typeof category !== "string" ||
+        !category.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Exam category is required",
+        });
+      }
+
+      exam.category = category.trim();
+    }
+
+    if (description !== undefined) {
+      exam.description =
+        typeof description === "string"
+          ? description.trim()
+          : exam.description;
+    }
+
+    if (isPublished !== undefined) {
+      exam.isPublished = Boolean(isPublished);
+    }
+
+    if (sortOrder !== undefined) {
+      const numericSortOrder = Number(sortOrder);
+
+      if (!Number.isFinite(numericSortOrder)) {
+        return res.status(400).json({
+          success: false,
+          message: "Sort order must be a valid number",
+        });
+      }
+
+      exam.sortOrder = numericSortOrder;
+    }
+
+    await exam.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Exam updated successfully",
+      exam: sanitizeExam(exam),
+    });
+  } catch (error) {
+    console.error("Update exam error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "An exam with this slug already exists",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update exam",
+    });
+  }
+}
+
+async function deleteExam(req, res) {
+  try {
+    const { id } = req.params;
+
+    const exam = await Exam.findById(id);
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    const seriesCount = await TestSeries.countDocuments({
+      exam: id,
+    });
+
+    if (seriesCount > 0) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This exam cannot be deleted because it has test series. Delete its test series first.",
+      });
+    }
+
+    await Exam.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Exam deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete exam error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete exam",
+    });
+  }
+}
+
+/* =========================================================
+   TEST SERIES â€” PUBLIC
+   ========================================================= */
+
+async function getPublishedTestSeries(req, res) {
+  try {
+    const { examId } = req.params;
+
+    const exam = await Exam.findOne({
+      _id: examId,
+      isPublished: true,
+    });
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam not found",
+      });
+    }
+
+    const series = await TestSeries.find({
+      exam: examId,
+      isPublished: true,
+    }).sort({
+      sortOrder: 1,
+      createdAt: -1,
+    });
+
+    const accessibleSeries = [];
+
+    for (const item of series) {
+      if (item.accessType !== "PREMIUM") {
+        accessibleSeries.push(item);
+        continue;
+      }
+
+      if (
+        req.user?.role !== "student" ||
+        !req.user?.userId
+      ) {
+        continue;
+      }
+
+      const accessResult =
+        await studentCanAccessTestSeries(
+          req.user.userId,
+          item._id,
+        );
+
+      if (accessResult.allowed) {
+        accessibleSeries.push(item);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      testSeries: accessibleSeries.map(
+        sanitizeTestSeries,
+      ),
+    });
+  } catch (error) {
+    console.error(
+      "Get published test series error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load test series",
+    });
+  }
+}
+async function getPublishedMockTests(req, res) {
+  try {
+    const { testSeriesId } = req.params;
+
+    const series = await TestSeries.findOne({
+      _id: testSeriesId,
+      isPublished: true,
+    });
+
+    if (!series) {
+      return res.status(404).json({
+        success: false,
+        message: "Test series not found",
+      });
+    }
+
+    if (series.accessType === "PREMIUM") {
+      if (
+        req.user?.role !== "student" ||
+        !req.user?.userId
+      ) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "This test series is available only to students assigned to its batch.",
+          reason: "authentication_required",
+        });
+      }
+
+      const accessResult =
+        await studentCanAccessTestSeries(
+          req.user.userId,
+          series._id,
+        );
+
+      if (!accessResult.allowed) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "This test series is not assigned to your active batch.",
+          reason: accessResult.reason,
+        });
+      }
+    }
+
+    const tests = await MockTest.find({
+      testSeries: testSeriesId,
+      isPublished: true,
+    }).sort({
+      sortOrder: 1,
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      mockTests: tests.map(sanitizeMockTest),
+    });
+  } catch (error) {
+    console.error(
+      "Get published mock tests error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load mock tests",
+    });
+  }
+}
+async function getPublishedMockTest(req, res) {
+  try {
+    const { slug } = req.params;
+
+    const test = await MockTest.findOne({
+      slug: slug.toLowerCase(),
+      isPublished: true,
+    });
+
+    if (!test) {
+      return res.status(404).json({
+        success: false,
+        message: "Mock test not found",
+      });
+    }
+
+    if (test.accessType === "PREMIUM") {
+      if (
+        req.user?.role !== "student" ||
+        !req.user?.userId
+      ) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "This mock test is available only to students assigned to its batch.",
+          reason: "authentication_required",
+        });
+      }
+
+      const accessResult =
+        await studentCanAccessTestSeries(
+          req.user.userId,
+          test.testSeries,
+        );
+
+      if (!accessResult.allowed) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "This mock test is not assigned to your active batch.",
+          reason: accessResult.reason,
+        });
+      }
+    }
+
+    const questions = await Question.find({
+      mockTest: test._id,
+    }).sort({
+      order: 1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      mockTest: sanitizeMockTest(test),
+      questions: questions.map(sanitizeQuestion),
+    });
+  } catch (error) {
+    console.error(
+      "Get published mock test error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load mock test",
+    });
+  }
+}
+module.exports = {
+  getPublishedExams,
+  getPublishedExam,
+  getAdminExams,
+  createExam,
+  updateExam,
+  deleteExam,
+
+  getPublishedTestSeries,
+  getAdminTestSeries,
+  createTestSeries,
+  updateTestSeries,
+  deleteTestSeries,
+
+  getPublishedMockTests,
+  getPublishedMockTest,
+  getAdminMockTests,
+  createMockTest,
+  updateMockTest,
+  deleteMockTest,
+
+  createQuestion,
+  getAdminQuestions,
+  updateQuestion,
+  deleteQuestion,
+};

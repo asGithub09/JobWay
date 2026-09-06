@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { getPublishedExams, type Exam } from "@/lib/api";
+import { SiteHeader } from "@/components/layout/site-header";
 
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -99,7 +100,10 @@ export default function ExamsPage() {
   }, [filteredExams]);
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
+    <>
+      <SiteHeader />
+
+      <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {/* HERO */}
         <section className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 px-6 py-10 text-white shadow-[0_30px_90px_rgba(15,23,42,0.18)] sm:px-10 sm:py-12 lg:px-14">
@@ -373,5 +377,6 @@ export default function ExamsPage() {
         </section>
       </div>
     </main>
+    </>
   );
 }

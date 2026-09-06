@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import {
@@ -280,23 +280,23 @@ const primaryItems: {
     : [
         {
           id: "government",
-          label: "Exams",
+          label: "Government Jobs",
           href: "/exams",
         },
         {
           id: "college",
-          label: "Test Series",
-          href: "/test-series",
+          label: "College Entrance Exams",
+          href: "/exams/college-entrance",
         },
         {
           id: "private",
-          label: "Mock Tests",
-          href: "/mock-tests",
+          label: "Private Jobs & Upskilling",
+          href: "/private-jobs",
         },
         {
           id: "upsc",
-          label: "Courses",
-          href: "/courses",
+          label: "UPSC, PSC & Judiciary",
+          href: "/exams/upsc-state-psc",
         },
       ];
   const loggedIn =

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Award,
   BarChart3,
   BookOpen,
   ChevronRight,
@@ -33,6 +34,7 @@ type DashboardSidebarItem =
   | "resources"
   | "performance"
   | "achievements"
+  | "certificates"
   | "purchases"
   | "settings";
 
@@ -48,7 +50,13 @@ type SidebarItemProps = {
   onClick?: () => void;
 };
 
-function getActiveItem(pathname: string): DashboardSidebarItem {
+/* =========================================================
+   ACTIVE SIDEBAR ITEM
+   ========================================================= */
+
+function getActiveItem(
+  pathname: string,
+): DashboardSidebarItem {
   if (pathname === "/dashboard") {
     return "dashboard";
   }
@@ -60,12 +68,17 @@ function getActiveItem(pathname: string): DashboardSidebarItem {
   if (pathname.startsWith("/dashboard/attempts")) {
     return "attempts";
   }
+
   if (pathname.startsWith("/dashboard/performance")) {
     return "performance";
   }
 
   if (pathname.startsWith("/dashboard/achievements")) {
     return "achievements";
+  }
+
+  if (pathname.startsWith("/dashboard/certificates")) {
+    return "certificates";
   }
 
   if (pathname.startsWith("/dashboard/purchases")) {
@@ -76,7 +89,18 @@ function getActiveItem(pathname: string): DashboardSidebarItem {
     return "settings";
   }
 
-  if (pathname.startsWith("/courses")) {
+  /*
+   * Student My Courses
+   *
+   * /dashboard/courses = protected student courses
+   * /courses           = public course catalogue/detail
+   *
+   * Both remain highlighted as "My Courses" when appropriate.
+   */
+  if (
+    pathname.startsWith("/dashboard/courses") ||
+    pathname.startsWith("/courses")
+  ) {
     return "courses";
   }
 
@@ -95,6 +119,10 @@ function getActiveItem(pathname: string): DashboardSidebarItem {
   return "dashboard";
 }
 
+/* =========================================================
+   SIDEBAR SECTION LABEL
+   ========================================================= */
+
 function SidebarSectionLabel({
   children,
 }: {
@@ -106,6 +134,10 @@ function SidebarSectionLabel({
     </p>
   );
 }
+
+/* =========================================================
+   SIDEBAR ITEM
+   ========================================================= */
 
 function SidebarItem({
   icon,
@@ -134,7 +166,9 @@ function SidebarItem({
         {icon}
       </span>
 
-      <span className="flex-1 truncate">{label}</span>
+      <span className="flex-1 truncate">
+        {label}
+      </span>
 
       <ChevronRight
         className={`h-4 w-4 shrink-0 transition-all duration-200 ${
@@ -148,6 +182,10 @@ function SidebarItem({
   );
 }
 
+/* =========================================================
+   DASHBOARD SIDEBAR
+   ========================================================= */
+
 function DashboardSidebar({
   activeItem,
   onNavigate,
@@ -160,11 +198,15 @@ function DashboardSidebar({
   const { user } = useAuth();
 
   const firstName =
-    user?.name?.trim().split(/\s+/)[0] || "Student";
+    user?.name?.trim().split(/\s+/)[0] ||
+    "Student";
 
   return (
     <div className="flex h-full w-full flex-col">
-      {/* BRAND */}
+      {/* =====================================================
+          BRAND
+         ===================================================== */}
+
       <div className="flex h-[72px] shrink-0 items-center border-b border-slate-100 px-5">
         <Link
           href="/"
@@ -190,7 +232,10 @@ function DashboardSidebar({
         </Link>
       </div>
 
-      {/* STUDENT PROFILE */}
+      {/* =====================================================
+          STUDENT PROFILE
+         ===================================================== */}
+
       <div className="px-4 pt-5">
         <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
           <div className="flex items-center gap-3">
@@ -214,7 +259,10 @@ function DashboardSidebar({
         </div>
       </div>
 
-      {/* NAVIGATION */}
+      {/* =====================================================
+          NAVIGATION
+         ===================================================== */}
+
       <nav
         aria-label="Student dashboard navigation"
         className="mt-5 flex-1 overflow-y-auto px-3 pb-4"
@@ -253,6 +301,10 @@ function DashboardSidebar({
           My Preparation
         </SidebarSectionLabel>
 
+        {/* =====================================================
+            MY COURSES
+            ===================================================== */}
+
         <SidebarItem
           icon={
             <BookOpen
@@ -261,7 +313,7 @@ function DashboardSidebar({
             />
           }
           label="My Courses"
-          href="/courses"
+          href="/dashboard/courses"
           active={activeItem === "courses"}
           onClick={onNavigate}
         />
@@ -322,6 +374,11 @@ function DashboardSidebar({
           onClick={onNavigate}
         />
 
+        {/* =====================================================
+            ACHIEVEMENTS
+            Existing student achievement area
+            ===================================================== */}
+
         <SidebarItem
           icon={
             <Trophy
@@ -332,6 +389,24 @@ function DashboardSidebar({
           label="Achievements"
           href="/dashboard/achievements"
           active={activeItem === "achievements"}
+          onClick={onNavigate}
+        />
+
+        {/* =====================================================
+            CERTIFICATES
+            Official course completion credentials
+            ===================================================== */}
+
+        <SidebarItem
+          icon={
+            <Award
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="Certificates"
+          href="/dashboard/certificates"
+          active={activeItem === "certificates"}
           onClick={onNavigate}
         />
 
@@ -366,7 +441,10 @@ function DashboardSidebar({
         />
       </nav>
 
-      {/* BOTTOM AREA */}
+      {/* =====================================================
+          BOTTOM AREA
+         ===================================================== */}
+
       <div className="shrink-0 border-t border-slate-100 p-3">
         <Link
           href="/"
@@ -398,31 +476,43 @@ function DashboardSidebar({
   );
 }
 
+/* =========================================================
+   STUDENT PORTAL SHELL
+   ========================================================= */
+
 export default function StudentPortalShell({
   children,
 }: StudentPortalShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const { user, signOut, isAuthenticated } = useAuth();
+  const {
+    user,
+    signOut,
+    isAuthenticated,
+  } = useAuth();
 
   /*
    * Prevent hydration mismatches caused by AuthContext restoring
    * authentication state from localStorage on the client.
    */
-  const [mounted, setMounted] = useState(false);
-
-  const [mobileSidebarOpen, setMobileSidebarOpen] =
+  const [mounted, setMounted] =
     useState(false);
+
+  const [
+    mobileSidebarOpen,
+    setMobileSidebarOpen,
+  ] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   /*
-   * The portal shell only controls the student areas.
-   * The public homepage and authentication pages remain
-   * completely outside the student portal navigation.
+   * The portal shell controls authenticated student areas.
+   *
+   * Public course pages remain supported so students can still
+   * browse the public course catalogue.
    */
   const studentPortalPaths =
     pathname === "/dashboard" ||
@@ -437,7 +527,12 @@ export default function StudentPortalShell({
    * keep the output identical. Once mounted, we can safely
    * use the authentication state restored from localStorage.
    */
-  if (!mounted || !studentPortalPaths || !isAuthenticated || !user) {
+  if (
+    !mounted ||
+    !studentPortalPaths ||
+    !isAuthenticated ||
+    !user
+  ) {
     return <>{children}</>;
   }
 
@@ -449,7 +544,8 @@ export default function StudentPortalShell({
     return <>{children}</>;
   }
 
-  const activeItem = getActiveItem(pathname);
+  const activeItem =
+    getActiveItem(pathname);
 
   const handleLogout = () => {
     setMobileSidebarOpen(false);
@@ -466,6 +562,7 @@ export default function StudentPortalShell({
       {/* =====================================================
           MOBILE TOP BAR
          ===================================================== */}
+
       <div className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
         <Link
           href="/"
@@ -497,9 +594,13 @@ export default function StudentPortalShell({
               ? "Close dashboard menu"
               : "Open dashboard menu"
           }
-          aria-expanded={mobileSidebarOpen}
+          aria-expanded={
+            mobileSidebarOpen
+          }
           onClick={() =>
-            setMobileSidebarOpen((current) => !current)
+            setMobileSidebarOpen(
+              (current) => !current,
+            )
           }
           className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-700 transition-colors hover:bg-slate-100 hover:text-[#E13032]"
         >
@@ -520,19 +621,24 @@ export default function StudentPortalShell({
       {/* =====================================================
           MOBILE SIDEBAR
          ===================================================== */}
+
       {mobileSidebarOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
             aria-label="Close dashboard menu"
             className="absolute inset-0 bg-slate-950/30 backdrop-blur-[2px]"
-            onClick={closeMobileSidebar}
+            onClick={
+              closeMobileSidebar
+            }
           />
 
           <aside className="relative flex h-full w-[290px] max-w-[85vw] flex-col border-r border-slate-200 bg-white shadow-2xl">
             <DashboardSidebar
               activeItem={activeItem}
-              onNavigate={closeMobileSidebar}
+              onNavigate={
+                closeMobileSidebar
+              }
               onLogout={handleLogout}
             />
           </aside>
@@ -542,6 +648,7 @@ export default function StudentPortalShell({
       {/* =====================================================
           DESKTOP SIDEBAR
          ===================================================== */}
+
       <aside className="fixed bottom-0 left-0 top-0 z-30 hidden w-[260px] border-r border-slate-200 bg-white lg:flex">
         <DashboardSidebar
           activeItem={activeItem}
@@ -553,11 +660,10 @@ export default function StudentPortalShell({
       {/* =====================================================
           PAGE CONTENT
          ===================================================== */}
-<div className="lg:pl-[260px]">
+
+      <div className="lg:pl-[260px]">
         {children}
       </div>
     </div>
   );
 }
-
-

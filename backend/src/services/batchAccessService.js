@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const BatchMember = require("../models/BatchMember");
 const BatchCourse = require("../models/BatchCourse");
+const BatchTestSeries = require("../models/BatchTestSeries");
 
 /*
  * ============================================================
@@ -10,7 +11,7 @@ const BatchCourse = require("../models/BatchCourse");
  *
  * Centralized server-side access control for student content.
  *
- * Access chain:
+ * Course access chain:
  *
  * Student
  *   ↓
@@ -22,7 +23,34 @@ const BatchCourse = require("../models/BatchCourse");
  *   ↓
  * Published Course
  *
- * This service does NOT modify User, Batch or Course.
+ * Test-Series access chain:
+ *
+ * Student
+ *   ↓
+ * Active BatchMember
+ *   ↓
+ * Active Batch
+ *   ↓
+ * Active BatchTestSeries
+ *   ↓
+ * Test Series
+ *
+ * Mock-Test access chain:
+ *
+ * Student
+ *   ↓
+ * Active BatchMember
+ *   ↓
+ * Active Batch
+ *   ↓
+ * Active BatchTestSeries
+ *   ↓
+ * Parent TestSeries
+ *   ↓
+ * MockTest
+ *
+ * This service does NOT modify User, Batch, Course,
+ * TestSeries or MockTest.
  */
 
 /**
@@ -187,8 +215,191 @@ async function getStudentAccessibleCourses(studentId) {
   };
 }
 
+/**
+ * ============================================================
+ * TEST SERIES ACCESS
+ * ============================================================
+ */
+
+/**
+ * Check whether a student can access a particular test series
+ * through their current active batch.
+ *
+ * Access is granted when:
+ *
+ * Student
+ *   ↓
+ * Active BatchMember
+ *   ↓
+ * Active Batch
+ *   ↓
+ * Active BatchTestSeries
+ *   ↓
+ * TestSeries
+ */
+async function studentCanAccessTestSeries(studentId, testSeriesId) {
+  const studentObjectId = toObjectId(studentId);
+  const testSeriesObjectId = toObjectId(testSeriesId);
+
+  if (!studentObjectId || !testSeriesObjectId) {
+    return {
+      allowed: false,
+      reason: "invalid_id",
+      batch: null,
+      membership: null,
+      assignment: null,
+    };
+  }
+
+  const activeBatch = await getStudentActiveBatch(studentObjectId);
+
+  if (!activeBatch) {
+    return {
+      allowed: false,
+      reason: "no_active_batch",
+      batch: null,
+      membership: null,
+      assignment: null,
+    };
+  }
+
+  const assignment = await BatchTestSeries.findOne({
+    batch: activeBatch.batch._id,
+    testSeries: testSeriesObjectId,
+    status: "active",
+  }).lean();
+
+  if (!assignment) {
+    return {
+      allowed: false,
+      reason: "test_series_not_assigned",
+      batch: activeBatch.batch,
+      membership: activeBatch.membership,
+      assignment: null,
+    };
+  }
+
+  return {
+    allowed: true,
+    reason: "batch_access",
+    batch: activeBatch.batch,
+    membership: activeBatch.membership,
+    assignment,
+  };
+}
+
+/**
+ * Get all test series accessible to a student through the
+ * student's current active batch.
+ *
+ * Only published test series are returned.
+ */
+async function getStudentAccessibleTestSeries(studentId) {
+  const activeBatch = await getStudentActiveBatch(studentId);
+
+  if (!activeBatch) {
+    return {
+      batch: null,
+      membership: null,
+      testSeries: [],
+    };
+  }
+
+  const assignments = await BatchTestSeries.find({
+    batch: activeBatch.batch._id,
+    status: "active",
+  })
+    .populate({
+      path: "testSeries",
+      match: {
+        isPublished: true,
+      },
+      populate: {
+        path: "exam",
+        select: "name slug shortName",
+      },
+    })
+    .sort({
+      assignedAt: -1,
+    })
+    .lean();
+
+  const testSeries = assignments
+    .filter((assignment) => assignment.testSeries)
+    .map((assignment) => ({
+      assignmentId: assignment._id,
+      assignedAt: assignment.assignedAt,
+      testSeries: assignment.testSeries,
+    }));
+
+  return {
+    batch: activeBatch.batch,
+    membership: activeBatch.membership,
+    testSeries,
+  };
+}
+
+/**
+ * ============================================================
+ * MOCK TEST ACCESS
+ * ============================================================
+ */
+
+/**
+ * Check whether a student can access a particular mock test.
+ *
+ * Mock tests inherit batch access from their parent Test Series.
+ *
+ * The mockTest argument can be:
+ *
+ * - a populated MockTest document/object containing testSeries
+ * - a lean MockTest object containing testSeries
+ *
+ * This avoids adding another database lookup inside the access
+ * service when the controller already has the MockTest document.
+ */
+async function studentCanAccessMockTest(studentId, mockTest) {
+  if (!mockTest) {
+    return {
+      allowed: false,
+      reason: "invalid_mock_test",
+      batch: null,
+      membership: null,
+      assignment: null,
+    };
+  }
+
+  const testSeriesId =
+    mockTest.testSeries?._id ||
+    mockTest.testSeries?.id ||
+    mockTest.testSeries;
+
+  const testSeriesObjectId = toObjectId(testSeriesId);
+
+  if (!testSeriesObjectId) {
+    return {
+      allowed: false,
+      reason: "invalid_test_series",
+      batch: null,
+      membership: null,
+      assignment: null,
+    };
+  }
+
+  return studentCanAccessTestSeries(
+    studentId,
+    testSeriesObjectId,
+  );
+}
+
 module.exports = {
   getStudentActiveBatch,
+
   studentCanAccessCourse,
   getStudentAccessibleCourses,
+
+  studentCanAccessTestSeries,
+  getStudentAccessibleTestSeries,
+
+  studentCanAccessMockTest,
 };

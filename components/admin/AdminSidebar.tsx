@@ -18,6 +18,7 @@ import {
   UserCog,
   Factory,
   FolderTree,
+    Layers3,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -52,9 +53,19 @@ const navigation = [
         comingSoon: true,
       },
       {
+  label: "Students",
+  href: "/admin/students",
+  icon: Users,
+},
+            {
         label: "Leads",
         href: "/admin/leads",
         icon: UserRound,
+      },
+      {
+        label: "Batches",
+        href: "/admin/batches",
+        icon: Layers3,
       },
       {
         label: "Enrollments",

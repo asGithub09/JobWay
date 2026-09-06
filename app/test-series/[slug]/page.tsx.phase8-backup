@@ -24,7 +24,6 @@ import {
   getPublishedExams,
   getPublishedMockTests,
   getPublishedTestSeries,
-  getMyTestSeriesBySlug,
   type Exam,
   type MockTest,
   type TestSeries,
@@ -47,16 +46,6 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [batchAccessLoading, setBatchAccessLoading] = useState(false);
-  const [batchAccess, setBatchAccess] = useState<
-    "granted" | "required" | "login"
-  >("granted");
-  const [batch, setBatch] = useState<{
-    _id: string;
-    name: string;
-    code: string;
-    status: "active" | "inactive" | "archived";
-  } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -128,64 +117,6 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
         setSeries(foundSeries);
         setExam(foundExam);
         setMockTests(mockResponse.mockTests || []);
-
-        // FREE series keep the existing public experience.
-        // PREMIUM series additionally check the authenticated student's
-        // active-batch entitlement through the server.
-        if (foundSeries.accessType === "PREMIUM") {
-          /*
-           * Ask the authenticated student endpoint directly.
-           *
-           * We intentionally do not read the JWT here. The existing
-           * getMyTestSeriesBySlug API helper already handles the token.
-           *
-           * 401/authentication errors mean the visitor is not logged in.
-           * Other access errors (including 403) mean the student needs
-           * the series assigned to their active batch.
-           */
-          setBatchAccessLoading(true);
-
-          try {
-            const accessResponse =
-              await getMyTestSeriesBySlug(foundSeries.slug);
-
-            if (!active) return;
-
-            setBatchAccess("granted");
-            setBatch(accessResponse.batch || null);
-          } catch (accessError) {
-            if (!active) return;
-
-            console.warn(
-              "Unable to confirm premium test-series batch access:",
-              accessError,
-            );
-
-            const accessMessage =
-              accessError instanceof Error
-                ? accessError.message.toLowerCase()
-                : "";
-
-            const isAuthenticationError =
-              accessMessage.includes("authentication") ||
-              accessMessage.includes("log in") ||
-              accessMessage.includes("login") ||
-              accessMessage.includes("token") ||
-              accessMessage.includes("401");
-
-            setBatchAccess(
-              isAuthenticationError ? "login" : "required",
-            );
-            setBatch(null);
-          } finally {
-            if (active) {
-              setBatchAccessLoading(false);
-            }
-          }
-        } else {
-          setBatchAccess("granted");
-          setBatch(null);
-        }
       } catch (err) {
         if (!active) return;
 
@@ -235,21 +166,13 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
   const premiumMockTests =
     mockTests.length - freeMockTests;
 
-  const isPremiumSeries = series?.accessType === "PREMIUM";
-  const hasPremiumBatchAccess =
-    !isPremiumSeries || batchAccess === "granted";
-
-  const getMockTestHref = (mockTest: MockTest) => {
-    return `/mock-tests/${encodeURIComponent(mockTest.slug)}`;
-  };
-
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-950 text-white">
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(220,38,38,0.22),transparent_32%),radial-gradient(circle_at_85%_20%,rgba(79,70,229,0.22),transparent_32%)]" />
 
-          <div className="relative mx-auto flex min-h-[70vh] max-w-7xl items-centerjustify-center px-6 py-20">
+          <div className="relative mx-auto flex min-h-[70vh] max-w-7xl items-center justify-center px-6 py-20">
             <div className="text-center">
               <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
                 <Loader2 className="h-8 w-8 animate-spin text-red-400" />
@@ -273,8 +196,8 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
     return (
       <main className="min-h-screen bg-slate-950 text-white">
         <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center px-6 py-20">
-          <div className="w-full rounded-3xl border border-white/10 bg-white/[0.06]p-8 text-center shadow-2xl backdrop-blur-xl">
-            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-centerrounded-2xl bg-red-500/10">
+          <div className="w-full rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-center shadow-2xl backdrop-blur-xl">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10">
               <XCircle className="h-8 w-8 text-red-400" />
             </div>
 
@@ -389,27 +312,6 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
                   "Practice smarter with carefully structured mock tests designed to help you improve accuracy, speed and exam confidence."}
               </p>
 
-              {isPremiumSeries && !batchAccessLoading && (
-                <div className="mt-5 inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3.5 py-2 text-xs font-semibold text-slate-300">
-                  {batchAccess === "granted" ? (
-                    <>
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
-                      {batch ? `Included in ${batch.name}` : "Batch access active"}
-                    </>
-                  ) : batchAccess === "login" ? (
-                    <>
-                      <Lock className="h-3.5 w-3.5 text-amber-300" />
-                      Log in to check batch access
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="h-3.5 w-3.5 text-amber-300" />
-                      Active batch assignment required
-                    </>
-                  )}
-                </div>
-              )}
-
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
                   href="#mock-tests"
@@ -436,7 +338,7 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
               <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.07] p-6 shadow-2xl backdrop-blur-xl">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em]text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                       Your Practice Hub
                     </p>
 
@@ -499,10 +401,10 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
 
       {/* Stats */}
       <section className="relative border-y border-white/10 bg-white/[0.025]">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-white/10lg:grid-cols-4 lg:px-8">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-white/10 lg:grid-cols-4 lg:px-8">
           <div className="px-5 py-6 lg:px-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xlbg-red-500/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
                 <Layers3 className="h-5 w-5 text-red-400" />
               </div>
 
@@ -520,7 +422,7 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
 
           <div className="px-5 py-6 lg:px-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xlbg-blue-500/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
                 <FileQuestion className="h-5 w-5 text-blue-400" />
               </div>
 
@@ -538,7 +440,7 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
 
           <div className="px-5 py-6 lg:px-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xlbg-emerald-500/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
                 <CheckCircle2 className="h-5 w-5 text-emerald-400" />
               </div>
 
@@ -556,7 +458,7 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
 
           <div className="px-5 py-6 lg:px-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xlbg-violet-500/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10">
                 <Clock3 className="h-5 w-5 text-violet-400" />
               </div>
 
@@ -582,58 +484,6 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
         <div className="grid gap-10 lg:grid-cols-[1fr_300px]">
           {/* Mock tests */}
           <div>
-            {isPremiumSeries && (
-              <div className="mb-7 rounded-3xl border border-white/10 bg-white/[0.055] p-5 shadow-xl backdrop-blur-xl sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-400/10">
-                      {batchAccessLoading ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-amber-300" />
-                      ) : batchAccess === "granted" ? (
-                        <CheckCircle2 className="h-5 w-5 text-emerald-300" />
-                      ) : (
-                        <Lock className="h-5 w-5 text-amber-300" />
-                      )}
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-bold text-white">
-                        {batchAccessLoading
-                          ? "Checking your access..."
-                          : batchAccess === "granted"
-                            ? "Included in your batch"
-                            : batchAccess === "login"
-                              ? "Premium batch access"
-                              : "Batch access required"}
-                      </p>
-
-                      <p className="mt-1 text-xs leading-5 text-slate-400">
-                        {batchAccessLoading
-                          ? "Verifying your active batch assignment."
-                          : batchAccess === "granted"
-                            ? batch
-                              ? `${batch.name}${batch.code ? ` • ${batch.code}` : ""}`
-                              : "Your active batch includes this premium test series."
-                            : batchAccess === "login"
-                              ? "Log in to check whether your batch includes this series."
-                              : "Ask your administrator to assign this test series to your active batch."}
-                      </p>
-                    </div>
-                  </div>
-
-                  {batchAccess === "login" && (
-                    <Link
-                      href={`/login?redirect=${encodeURIComponent(`/test-series/${series.slug}`)}`}
-                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/15"
-                    >
-                      Log In
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
-
             <div className="mb-7">
               <div className="flex items-center gap-2 text-sm font-semibold text-red-400">
                 <Sparkles className="h-4 w-4" />
@@ -676,7 +526,7 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
                       key={mockTest.id}
                       className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.055] p-5 shadow-xl backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.075] sm:p-6"
                     >
-                      <div className="absolute right-0 top-0 h-32 w-32 rounded-fullbg-indigo-500/5 blur-3xl transition group-hover:bg-indigo-500/10" />
+                      <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-indigo-500/5 blur-3xl transition group-hover:bg-indigo-500/10" />
 
                       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex min-w-0 gap-4">
@@ -710,7 +560,7 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
 
                             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-slate-400">
                               <span className="inline-flex items-center gap-1.5">
-                                <FileQuestion className="h-3.5 w-3.5 text-blue-400"/>
+                                <FileQuestion className="h-3.5 w-3.5 text-blue-400" />
                                 {mockTest.totalQuestions} Questions
                               </span>
 
@@ -736,39 +586,24 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
                         </div>
 
                         <div className="shrink-0 lg:pl-4">
-                          {isPremium && !hasPremiumBatchAccess ? (
-                            batchAccess === "login" ? (
-                              <Link
-                                href={`/login?redirect=${encodeURIComponent(`/test-series/${series.slug}`)}`}
-                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/15 sm:w-auto"
-                              >
+                          <Link
+                            href={`/mock-tests/${encodeURIComponent(
+                              mockTest.slug,
+                            )}`}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 sm:w-auto"
+                          >
+                            {isPremium ? (
+                              <>
                                 <Lock className="h-4 w-4" />
-                                Log In to Access
-                              </Link>
+                                View Test
+                              </>
                             ) : (
-                              <div className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/15 bg-amber-400/10 px-5 py-3 text-sm font-bold text-amber-200 sm:w-auto">
-                                <Lock className="h-4 w-4" />
-                                Batch Access Required
-                              </div>
-                            )
-                          ) : (
-                            <Link
-                              href={getMockTestHref(mockTest)}
-                              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 sm:w-auto"
-                            >
-                              {isPremium ? (
-                                <>
-                                  <Crown className="h-4 w-4" />
-                                  Start Test
-                                </>
-                              ) : (
-                                <>
-                                  Start Test
-                                  <ArrowRight className="h-4 w-4" />
-                                </>
-                              )}
-                            </Link>
-                          )}
+                              <>
+                                Start Test
+                                <ArrowRight className="h-4 w-4" />
+                              </>
+                            )}
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -781,8 +616,8 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
           {/* Sidebar */}
           <aside className="space-y-5">
             {/* Access card */}
-            <div className="rounded-3xl border border-white/10 bg-white/[0.055] p-5shadow-xl backdrop-blur-xl">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xlbg-indigo-500/10">
+            <div className="rounded-3xl border border-white/10 bg-white/[0.055] p-5 shadow-xl backdrop-blur-xl">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10">
                 <Crown className="h-5 w-5 text-indigo-300" />
               </div>
 
@@ -792,15 +627,7 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
 
               <p className="mt-2 text-sm leading-6 text-slate-500">
                 {series.accessType === "PREMIUM"
-                  ? batchAccessLoading
-                    ? "Checking whether your active batch includes this premium series."
-                    : batchAccess === "granted"
-                      ? batch
-                        ? `Included with your ${batch.name} batch access.`
-                        : "Your active batch includes this premium series."
-                      : batchAccess === "login"
-                        ? "Log in to check your batch-based access to this premium series."
-                        : "This premium series requires assignment to your active batch."
+                  ? "This series contains premium practice material. Upgrade your access to unlock all tests."
                   : "You can start practicing these tests immediately."}
               </p>
 
@@ -828,7 +655,7 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
             </div>
 
             {/* Benefits */}
-            <div className="rounded-3xl border border-white/10 bg-white/[0.055] p-5shadow-xl backdrop-blur-xl">
+            <div className="rounded-3xl border border-white/10 bg-white/[0.055] p-5 shadow-xl backdrop-blur-xl">
               <h3 className="text-lg font-bold">
                 Why Practice Here?
               </h3>
@@ -885,7 +712,7 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
             {/* Navigation */}
             <Link
               href="/exams"
-              className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-300 transitionhover:bg-white/[0.08] hover:text-white"
+              className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
             >
               <span className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
@@ -913,7 +740,7 @@ export default function TestSeriesDetailsPage({ params }: PageProps) {
                 Your preparation starts here.
               </h2>
 
-              <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-400sm:text-base">
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
                 Pick a mock test, attempt it under exam conditions
                 and use your performance to decide what to improve
                 next.

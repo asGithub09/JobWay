@@ -2880,295 +2880,45 @@ export async function getMyCourse(
     },
   );
 }
-
 /* ============================================================
-   STUDENT TEST SERIES — BATCH ACCESS
+   STUDENT COURSES — BATCH ACCESS
    ============================================================ */
 
-export interface StudentTestSeriesBatch {
+export interface StudentCourseBatch {
   _id: string;
   name: string;
   code: string;
   status: "active" | "inactive" | "archived";
 }
 
-export interface StudentTestSeriesAccess {
+export interface StudentCourseAccess {
   assignmentId: string;
   assignedAt: string;
-  testSeries: TestSeries;
+  course: Course;
 }
 
-export interface GetMyTestSeriesResponse {
-  success: boolean;
-  batch: StudentTestSeriesBatch | null;
-  testSeries: StudentTestSeriesAccess[];
-  total: number;
-}
-
-
-export interface GetMyTestSeriesBySlugResponse {
-  success: boolean;
-  batch: StudentTestSeriesBatch | null;
-  testSeries: TestSeries;
-}
-
-/**
- * Get all test series assigned to the authenticated
- * student's active batch.
- */
-export async function getMyTestSeries(): Promise<GetMyTestSeriesResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  return request<GetMyTestSeriesResponse>(
-    "/student/test-series",
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-}
-
-/**
- * Get one published test series through the
- * authenticated student's batch access.
- */
-export async function getMyTestSeriesBySlug(
-  slug: string,
-): Promise<GetMyTestSeriesBySlugResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-return request<GetMyTestSeriesBySlugResponse>(
-  `/student/test-series/${encodeURIComponent(slug)}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-}
-
-/* ============================================================
-   STUDENT COURSE PROGRESS
-   ============================================================ */
-
-export interface StudentCourseCompletedLesson {
-  moduleIndex: number;
-  lessonIndex: number;
-  completedAt: string;
-}
-
-export interface StudentCourseCompletedModule {
-  moduleIndex: number;
-  completedAt: string;
-}
-
-export interface StudentCourseProgress {
-  _id: string;
-  completedLessons: StudentCourseCompletedLesson[];
-  completedModules: StudentCourseCompletedModule[];
-  currentModuleIndex: number;
-  currentLessonIndex: number;
-  progressPercent: number;
-  lastAccessedAt: string;
-  completedAt: string | null;
-}
-
-export interface GetStudentCourseProgressResponse {
+export interface GetMyCoursesResponse {
   success: boolean;
   batch: StudentCourseBatch | null;
-  course: {
-    _id: string;
-    title: string;
-    slug: string;
-  };
-  progress: StudentCourseProgress;
-  totalLessons: number;
-  completedLessonCount: number;
-  progressPercent: number;
-}
-
-export interface CompleteStudentCourseLessonPayload {
-  moduleIndex: number;
-  lessonIndex: number;
-}
-
-export interface CompleteStudentCourseLessonResponse {
-  success: boolean;
-  message: string;
-  progress: StudentCourseProgress;
-  totalLessons: number;
-  completedLessonCount: number;
-  progressPercent: number;
-  nextLesson: {
-    moduleIndex: number;
-    lessonIndex: number;
-  } | null;
-  lessonAlreadyCompleted: boolean;
-  moduleCompleted: boolean;
-  courseCompleted: boolean;
-}
-
-export interface UpdateStudentCourseLessonPayload {
-  moduleIndex: number;
-  lessonIndex: number;
-}
-
-export interface UpdateStudentCourseLessonResponse {
-  success: boolean;
-  message: string;
-  progress: StudentCourseProgress;
-}
-
-/**
- * Get persistent progress for the authenticated student's
- * assigned course.
- */
-export async function getStudentCourseProgress(
-  courseId: string,
-): Promise<GetStudentCourseProgressResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  return request<GetStudentCourseProgressResponse>(
-    `/student/course-progress/${encodeURIComponent(courseId)}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-}
-
-/**
- * Mark one course lesson as completed.
- *
- * The backend validates the student's batch access and
- * calculates the next lesson and overall progress.
- */
-export async function completeStudentCourseLesson(
-  courseId: string,
-  payload: CompleteStudentCourseLessonPayload,
-): Promise<CompleteStudentCourseLessonResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  return request<CompleteStudentCourseLessonResponse>(
-    `/student/course-progress/${encodeURIComponent(courseId)}/complete`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    },
-  );
-}
-
-/**
- * Save the lesson the student is currently viewing.
- */
-export async function updateStudentCourseLesson(
-  courseId: string,
-  payload: UpdateStudentCourseLessonPayload,
-): Promise<UpdateStudentCourseLessonResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  return request<UpdateStudentCourseLessonResponse>(
-    `/student/course-progress/${encodeURIComponent(courseId)}/current`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    },
-  );
-}
-
-/* ============================================================
-   STUDENT CERTIFICATES
-   ============================================================ */
-
-export interface StudentCertificateCourse {
-  _id: string;
-  title: string;
-  slug: string;
-  bannerImage?: string;
-  instructor?: string;
-}
-
-export interface StudentCertificate {
-  _id: string;
-  student: string;
-  course: StudentCertificateCourse | string;
-
-  certificateNumber: string;
-  verificationId: string;
-
-  studentName: string;
-  courseTitle: string;
-
-  completionPercentage: number;
-
-  issuedAt: string;
-  status?: "issued" | "revoked";
-
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface StudentCertificatesResponse {
-  success: boolean;
-  certificates: StudentCertificate[];
+  courses: StudentCourseAccess[];
   total: number;
 }
 
-export interface StudentCertificateResponse {
+export interface GetMyCourseResponse {
   success: boolean;
-  certificate: StudentCertificate;
-  created?: boolean;
-  message?: string;
+  batch: StudentCourseBatch | null;
+  course: Course;
 }
 
-/**
- * Get all certificates belonging to the
- * authenticated student.
- */
-export async function getStudentCertificates(): Promise<
-  StudentCertificatesResponse
-> {
+export async function getMyCourses(): Promise<GetMyCoursesResponse> {
   const token = getAuthToken();
 
   if (!token) {
     throw new Error("Authentication required");
   }
 
-  return request<StudentCertificatesResponse>(
-    "/student/certificates",
+  return request<GetMyCoursesResponse>(
+    "/student/courses",
     {
       method: "GET",
       headers: {
@@ -3178,214 +2928,19 @@ export async function getStudentCertificates(): Promise<
   );
 }
 
-/**
- * Issue a certificate for a completed course.
- *
- * The backend remains authoritative for:
- * - authentication
- * - student status
- * - batch access
- * - course access
- * - course completion
- * - duplicate certificate prevention
- */
-export async function issueStudentCertificate(
-  courseId: string,
-): Promise<StudentCertificateResponse> {
+export async function getMyCourse(
+  slug: string,
+): Promise<GetMyCourseResponse> {
   const token = getAuthToken();
 
   if (!token) {
     throw new Error("Authentication required");
   }
 
-  return request<StudentCertificateResponse>(
-    `/student/certificates/${encodeURIComponent(courseId)}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-}
-
-/**
- * Get one certificate belonging to the
- * authenticated student.
- */
-export async function getStudentCertificate(
-  certificateId: string,
-): Promise<StudentCertificateResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  return request<StudentCertificateResponse>(
-    `/student/certificates/${encodeURIComponent(certificateId)}`,
+  return request<GetMyCourseResponse>(
+    `/student/courses/${encodeURIComponent(slug)}`,
     {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-}
-/* ============================================================
-   BATCH TEST SERIES — ADMIN
-   ============================================================ */
-
-export interface BatchTestSeriesExam {
-  _id: string;
-  name: string;
-  slug: string;
-  shortName: string;
-}
-
-export interface BatchTestSeriesItem {
-  _id: string;
-  title: string;
-  slug: string;
-  description: string;
-  accessType: "FREE" | "PREMIUM";
-  price: number;
-  discountPrice: number;
-  isPublished: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-  exam: BatchTestSeriesExam;
-}
-
-export interface BatchTestSeries {
-  membershipId: string;
-  status: "active" | "inactive";
-  assignedAt: string;
-  testSeries: BatchTestSeriesItem;
-}
-
-export interface GetBatchTestSeriesResponse {
-  success: boolean;
-  batch: Batch;
-  testSeries: BatchTestSeries[];
-  total: number;
-}
-
-export interface BatchTestSeriesSearchResult extends BatchTestSeriesItem {}
-
-export interface GetAvailableBatchTestSeriesResponse {
-  success: boolean;
-  testSeries: BatchTestSeriesSearchResult[];
-  total: number;
-}
-
-export interface AddTestSeriesToBatchResponse {
-  success: boolean;
-  message: string;
-  addedCount: number;
-  reactivatedCount: number;
-  skippedCount: number;
-  testSeries: BatchTestSeriesSearchResult[];
-}
-
-export interface RemoveTestSeriesFromBatchResponse {
-  success: boolean;
-  message: string;
-}
-
-export async function getBatchTestSeries(
-  batchId: string,
-): Promise<GetBatchTestSeriesResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  return request<GetBatchTestSeriesResponse>(
-    `/batch-test-series/batch/${encodeURIComponent(batchId)}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-}
-
-export async function searchBatchTestSeries(
-  batchId: string,
-  search = "",
-): Promise<GetAvailableBatchTestSeriesResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  const query = new URLSearchParams();
-
-  if (search.trim()) {
-    query.set("search", search.trim());
-  }
-
-  const queryString = query.toString();
-
-  return request<GetAvailableBatchTestSeriesResponse>(
-    `/batch-test-series/batch/${encodeURIComponent(batchId)}/available${
-      queryString ? `?${queryString}` : ""
-    }`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-}
-
-export async function addTestSeriesToBatch(
-  batchId: string,
-  testSeriesIds: string[],
-): Promise<AddTestSeriesToBatchResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  return request<AddTestSeriesToBatchResponse>(
-    `/batch-test-series/batch/${encodeURIComponent(batchId)}/test-series`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        testSeriesIds,
-      }),
-    },
-  );
-}
-
-export async function removeTestSeriesFromBatch(
-  batchId: string,
-  testSeriesId: string,
-): Promise<RemoveTestSeriesFromBatchResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  return request<RemoveTestSeriesFromBatchResponse>(
-    `/batch-test-series/batch/${encodeURIComponent(batchId)}/test-series/${encodeURIComponent(
-      testSeriesId,
-    )}`,
-    {
-      method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
       },
