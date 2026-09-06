@@ -16,13 +16,9 @@ const courseImageRoutes = require("./routes/courseImageRoutes");
 const courseFactoryRoutes = require("./routes/courseFactoryRoutes");
 const courseCategoryRoutes = require("./routes/courseCategoryRoutes");
 const examRoutes = require("./routes/examRoutes");
-
 const batchRoutes = require("./routes/batchRoutes");
 const batchMemberRoutes = require("./routes/batchMemberRoutes");
 const studentRoutes = require("./routes/studentRoutes");
-const batchCourseRoutes = require("./routes/batchCourseRoutes");
-const studentCourseRoutes = require("./routes/studentCourseRoutes");
-const studentCourseProgressRoutes = require("./routes/studentCourseProgressRoutes");
 
 const app = express();
 
@@ -153,7 +149,6 @@ app.use(
   "/api/batches",
   batchRoutes,
 );
-
 app.use(
   "/api/students",
   studentRoutes,
@@ -162,25 +157,6 @@ app.use(
 app.use(
   "/api/batch-members",
   batchMemberRoutes,
-);
-
-app.use(
-  "/api/batch-courses",
-  batchCourseRoutes,
-);
-
-/* =========================================================
-   STUDENT COURSE ACCESS
-   ========================================================= */
-
-app.use(
-  "/api/student/courses",
-  studentCourseRoutes,
-);
-
-app.use(
-  "/api/student/course-progress",
-  studentCourseProgressRoutes,
 );
 
 /* =========================================================
@@ -282,22 +258,9 @@ async function startServer() {
         console.log(
           "Batch Member API enabled",
         );
-
         console.log(
-          "Student API enabled",
-        );
-
-        console.log(
-          "Batch Course API enabled",
-        );
-
-        console.log(
-          "Student Course Access API enabled",
-        );
-
-        console.log(
-          "Student Course Progress API enabled",
-        );
+  "Student API enabled",
+);
       },
     );
   } catch (error) {

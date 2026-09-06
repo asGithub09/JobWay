@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const fsSync = require("fs");
 
 const {
   authenticateToken,
@@ -19,10 +20,24 @@ const {
 
 const router = express.Router();
 
+/*
+ * Temporary upload directory.
+ *
+ * Files are stored here only long enough for processing/uploading
+ * to permanent Cloudinary storage.
+ */
 const uploadDirectory = path.join(
   __dirname,
   "../../uploads/course-materials",
 );
+
+/*
+ * Render/local environments may not have this directory yet.
+ * Create it before Multer attempts to write a file.
+ */
+fsSync.mkdirSync(uploadDirectory, {
+  recursive: true,
+});
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {

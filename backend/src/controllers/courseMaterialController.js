@@ -9,9 +9,18 @@ const {
   extractDocument,
 } = require("../services/documentService");
 
-function serializeMaterial(material, course) {
+const {
+  uploadCourseMaterial: uploadCourseMaterialToCloudinary,
+  deleteCloudinaryAsset,
+} = require("../services/cloudinaryService");
+
+function serializeMaterial(
+  material,
+  course,
+) {
   return {
     id: material._id.toString(),
+
     course: course
       ? {
           id: course._id.toString(),
@@ -20,26 +29,38 @@ function serializeMaterial(material, course) {
           category: course.category,
         }
       : material.course?.toString() || "",
+
     originalName: material.originalName,
     fileName: material.fileName,
     mimeType: material.mimeType,
     fileSize: material.fileSize,
-    storageProvider: material.storageProvider,
+
+    storageProvider:
+      material.storageProvider,
+
     storageKey: material.storageKey,
     storageUrl: material.storageUrl,
+
     status: material.status,
+
     pageCount: material.pageCount,
-    characterCount: material.characterCount,
+    characterCount:
+      material.characterCount,
     wordCount: material.wordCount,
+
     errorMessage: material.errorMessage,
+
     createdAt: material.createdAt,
     updatedAt: material.updatedAt,
   };
 }
 
-function getMaterialAbsolutePath(material) {
+function getMaterialAbsolutePath(
+  material,
+) {
   if (
-    material.storageProvider !== "local" ||
+    material.storageProvider !==
+      "local" ||
     !material.storageKey
   ) {
     return "";
@@ -57,7 +78,9 @@ function getMaterialAbsolutePath(material) {
 
   if (
     absolutePath !== uploadsRoot &&
-    !absolutePath.startsWith(`${uploadsRoot}${path.sep}`)
+    !absolutePath.startsWith(
+      `${uploadsRoot}${path.sep}`,
+    )
   ) {
     return "";
   }
@@ -65,8 +88,25 @@ function getMaterialAbsolutePath(material) {
   return absolutePath;
 }
 
-async function uploadCourseMaterial(req, res) {
+/*
+ * Upload a course material.
+ *
+ * Flow:
+ *
+ * 1. Multer stores the file temporarily.
+ * 2. Course is validated.
+ * 3. Document text is extracted.
+ * 4. Original file is uploaded to Cloudinary RAW storage.
+ * 5. MongoDB stores the Cloudinary location + extracted data.
+ * 6. Temporary Render/local file is deleted.
+ */
+async function uploadCourseMaterial(
+  req,
+  res,
+) {
   let uploadedFilePath = "";
+
+  let cloudinaryPublicId = "";
 
   try {
     const { courseId } = req.body;
@@ -81,16 +121,20 @@ async function uploadCourseMaterial(req, res) {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "Please upload a PDF or DOCX file.",
+        message:
+          "Please upload a PDF or DOCX file.",
       });
     }
 
     uploadedFilePath = req.file.path;
 
-    const course = await Course.findById(courseId);
+    const course =
+      await Course.findById(courseId);
 
     if (!course) {
-      await fs.unlink(uploadedFilePath).catch(() => {});
+      await fs
+        .unlink(uploadedFilePath)
+        .catch(() => {});
 
       return res.status(404).json({
         success: false,
@@ -98,36 +142,89 @@ async function uploadCourseMaterial(req, res) {
       });
     }
 
-    const extracted = await extractDocument(
-      uploadedFilePath,
-      req.file.originalname,
-    );
-
-    const material = await CourseMaterial.create({
-      course: course._id,
-      originalName: extracted.originalName,
-      fileName: req.file.filename,
-      mimeType: extracted.mimeType,
-      fileSize: req.file.size,
-      storageProvider: "local",
-      storageKey: path.relative(
-        path.join(__dirname, "../../uploads"),
+    /*
+     * Extract document content before moving
+     * the permanent file to Cloudinary.
+     */
+    const extracted =
+      await extractDocument(
         uploadedFilePath,
-      ),
-      storageUrl: "",
-      status: "READY",
-      extractedText: extracted.text,
-      pageCount: extracted.pageCount,
-      characterCount: extracted.characterCount,
-      wordCount: extracted.wordCount,
-      uploadedBy: req.user.userId,
-    });
+        req.file.originalname,
+      );
+
+    /*
+     * Upload the original document to
+     * permanent Cloudinary RAW storage.
+     */
+    const uploadedMaterial =
+      await uploadCourseMaterialToCloudinary(
+        uploadedFilePath,
+        {
+          folder:
+            "jobway/course-materials",
+        },
+      );
+
+    cloudinaryPublicId =
+      uploadedMaterial.publicId;
+
+    /*
+     * Save the Cloudinary reference in MongoDB.
+     */
+    const material =
+      await CourseMaterial.create({
+        course: course._id,
+
+        originalName:
+          extracted.originalName,
+
+        fileName:
+          req.file.filename,
+
+        mimeType:
+          extracted.mimeType,
+
+        fileSize:
+          req.file.size,
+
+        storageProvider:
+          "cloudinary",
+
+        storageKey:
+          uploadedMaterial.publicId,
+
+        storageUrl:
+          uploadedMaterial.secureUrl,
+
+        status: "READY",
+
+        extractedText:
+          extracted.text,
+
+        pageCount:
+          extracted.pageCount,
+
+        characterCount:
+          extracted.characterCount,
+
+        wordCount:
+          extracted.wordCount,
+
+        uploadedBy:
+          req.user.userId,
+      });
 
     return res.status(201).json({
       success: true,
+
       message:
         "Course material uploaded and processed successfully.",
-      material: serializeMaterial(material, course),
+
+      material:
+        serializeMaterial(
+          material,
+          course,
+        ),
     });
   } catch (error) {
     console.error(
@@ -135,12 +232,39 @@ async function uploadCourseMaterial(req, res) {
       error,
     );
 
+    /*
+     * If Cloudinary upload succeeded but
+     * MongoDB creation failed, clean up the
+     * orphaned Cloudinary asset.
+     */
+    if (cloudinaryPublicId) {
+      await deleteCloudinaryAsset(
+        cloudinaryPublicId,
+        {
+          resourceType: "raw",
+        },
+      ).catch(
+        (cloudinaryError) => {
+          console.error(
+            "Failed to clean up Cloudinary course material:",
+            cloudinaryError,
+          );
+        },
+      );
+    }
+
+    /*
+     * Temporary Render/local file cleanup.
+     */
     if (uploadedFilePath) {
-      await fs.unlink(uploadedFilePath).catch(() => {});
+      await fs
+        .unlink(uploadedFilePath)
+        .catch(() => {});
     }
 
     return res.status(500).json({
       success: false,
+
       message:
         error.message ||
         "Failed to process course material.",
@@ -148,9 +272,15 @@ async function uploadCourseMaterial(req, res) {
   }
 }
 
-async function getAdminCourseMaterials(req, res) {
+async function getAdminCourseMaterials(
+  req,
+  res,
+) {
   try {
-    const { courseId, status } = req.query;
+    const {
+      courseId,
+      status,
+    } = req.query;
 
     const filter = {};
 
@@ -162,22 +292,30 @@ async function getAdminCourseMaterials(req, res) {
       filter.status = status;
     }
 
-    const materials = await CourseMaterial.find(filter)
-      .populate(
-        "course",
-        "title slug category isPublished",
+    const materials =
+      await CourseMaterial.find(
+        filter,
       )
-      .sort({ createdAt: -1 })
-      .lean();
+        .populate(
+          "course",
+          "title slug category isPublished",
+        )
+        .sort({
+          createdAt: -1,
+        })
+        .lean();
 
     return res.json({
       success: true,
-      materials: materials.map((material) =>
-        serializeMaterial(
-          material,
-          material.course,
+
+      materials:
+        materials.map(
+          (material) =>
+            serializeMaterial(
+              material,
+              material.course,
+            ),
         ),
-      ),
     });
   } catch (error) {
     console.error(
@@ -187,12 +325,16 @@ async function getAdminCourseMaterials(req, res) {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to load course materials.",
+      message:
+        "Failed to load course materials.",
     });
   }
 }
 
-async function getCourseMaterials(req, res) {
+async function getCourseMaterials(
+  req,
+  res,
+) {
   try {
     const { courseId } = req.query;
 
@@ -204,29 +346,38 @@ async function getCourseMaterials(req, res) {
       filter.course = courseId;
     }
 
-    const materials = await CourseMaterial.find(filter)
-      .populate(
-        "course",
-        "title slug category isPublished",
+    const materials =
+      await CourseMaterial.find(
+        filter,
       )
-      .sort({ createdAt: -1 })
-      .lean();
+        .populate(
+          "course",
+          "title slug category isPublished",
+        )
+        .sort({
+          createdAt: -1,
+        })
+        .lean();
 
-    const visibleMaterials = materials.filter(
-      (material) =>
-        material.course &&
-        material.course.isPublished === true,
-    );
+    const visibleMaterials =
+      materials.filter(
+        (material) =>
+          material.course &&
+          material.course.isPublished ===
+            true,
+      );
 
     return res.json({
       success: true,
-      materials: visibleMaterials.map(
-        (material) =>
-          serializeMaterial(
-            material,
-            material.course,
-          ),
-      ),
+
+      materials:
+        visibleMaterials.map(
+          (material) =>
+            serializeMaterial(
+              material,
+              material.course,
+            ),
+        ),
     });
   } catch (error) {
     console.error(
@@ -236,17 +387,23 @@ async function getCourseMaterials(req, res) {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to load study resources.",
+      message:
+        "Failed to load study resources.",
     });
   }
 }
 
-async function getCourseMaterial(req, res) {
+async function getCourseMaterial(
+  req,
+  res,
+) {
   try {
     const { id } = req.params;
 
     const material =
-      await CourseMaterial.findById(id).populate(
+      await CourseMaterial.findById(
+        id,
+      ).populate(
         "course",
         "title slug category isPublished",
       );
@@ -264,7 +421,8 @@ async function getCourseMaterial(req, res) {
     if (
       !isAdmin &&
       (!material.course ||
-        material.course.isPublished !== true ||
+        material.course.isPublished !==
+          true ||
         material.status !== "READY")
     ) {
       return res.status(404).json({
@@ -275,10 +433,12 @@ async function getCourseMaterial(req, res) {
 
     return res.json({
       success: true,
-      material: serializeMaterial(
-        material,
-        material.course,
-      ),
+
+      material:
+        serializeMaterial(
+          material,
+          material.course,
+        ),
     });
   } catch (error) {
     console.error(
@@ -288,17 +448,23 @@ async function getCourseMaterial(req, res) {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to load resource.",
+      message:
+        "Failed to load resource.",
     });
   }
 }
 
-async function openCourseMaterial(req, res) {
+async function openCourseMaterial(
+  req,
+  res,
+) {
   try {
     const { id } = req.params;
 
     const material =
-      await CourseMaterial.findById(id).populate(
+      await CourseMaterial.findById(
+        id,
+      ).populate(
         "course",
         "title slug category isPublished",
       );
@@ -316,7 +482,8 @@ async function openCourseMaterial(req, res) {
     if (
       !isAdmin &&
       (!material.course ||
-        material.course.isPublished !== true ||
+        material.course.isPublished !==
+          true ||
         material.status !== "READY")
     ) {
       return res.status(404).json({
@@ -325,18 +492,35 @@ async function openCourseMaterial(req, res) {
       });
     }
 
-    if (material.storageProvider === "cloudinary") {
+    /*
+     * Cloudinary-backed material.
+     */
+    if (
+      material.storageProvider ===
+      "cloudinary"
+    ) {
       if (!material.storageUrl) {
         return res.status(404).json({
           success: false,
-          message: "Resource file is unavailable.",
+          message:
+            "Resource file is unavailable.",
         });
       }
 
-      return res.redirect(material.storageUrl);
+      return res.redirect(
+        material.storageUrl,
+      );
     }
 
-    if (material.storageProvider !== "local") {
+    /*
+     * Existing local-storage fallback.
+     * This keeps older locally stored materials
+     * working if they still exist.
+     */
+    if (
+      material.storageProvider !==
+      "local"
+    ) {
       return res.status(501).json({
         success: false,
         message:
@@ -345,15 +529,20 @@ async function openCourseMaterial(req, res) {
     }
 
     const absolutePath =
-      getMaterialAbsolutePath(material);
+      getMaterialAbsolutePath(
+        material,
+      );
 
     if (
       !absolutePath ||
-      !fsSync.existsSync(absolutePath)
+      !fsSync.existsSync(
+        absolutePath,
+      )
     ) {
       return res.status(404).json({
         success: false,
-        message: "Resource file is unavailable.",
+        message:
+          "Resource file is unavailable.",
       });
     }
 
@@ -370,7 +559,9 @@ async function openCourseMaterial(req, res) {
       )}"`,
     );
 
-    return res.sendFile(absolutePath);
+    return res.sendFile(
+      absolutePath,
+    );
   } catch (error) {
     console.error(
       "Open course material error:",
@@ -379,17 +570,23 @@ async function openCourseMaterial(req, res) {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to open resource.",
+      message:
+        "Failed to open resource.",
     });
   }
 }
 
-async function downloadCourseMaterial(req, res) {
+async function downloadCourseMaterial(
+  req,
+  res,
+) {
   try {
     const { id } = req.params;
 
     const material =
-      await CourseMaterial.findById(id).populate(
+      await CourseMaterial.findById(
+        id,
+      ).populate(
         "course",
         "title slug category isPublished",
       );
@@ -407,7 +604,8 @@ async function downloadCourseMaterial(req, res) {
     if (
       !isAdmin &&
       (!material.course ||
-        material.course.isPublished !== true ||
+        material.course.isPublished !==
+          true ||
         material.status !== "READY")
     ) {
       return res.status(404).json({
@@ -416,18 +614,33 @@ async function downloadCourseMaterial(req, res) {
       });
     }
 
-    if (material.storageProvider === "cloudinary") {
+    /*
+     * Cloudinary-backed material.
+     */
+    if (
+      material.storageProvider ===
+      "cloudinary"
+    ) {
       if (!material.storageUrl) {
         return res.status(404).json({
           success: false,
-          message: "Resource file is unavailable.",
+          message:
+            "Resource file is unavailable.",
         });
       }
 
-      return res.redirect(material.storageUrl);
+      return res.redirect(
+        material.storageUrl,
+      );
     }
 
-    if (material.storageProvider !== "local") {
+    /*
+     * Existing local-storage fallback.
+     */
+    if (
+      material.storageProvider !==
+      "local"
+    ) {
       return res.status(501).json({
         success: false,
         message:
@@ -436,15 +649,20 @@ async function downloadCourseMaterial(req, res) {
     }
 
     const absolutePath =
-      getMaterialAbsolutePath(material);
+      getMaterialAbsolutePath(
+        material,
+      );
 
     if (
       !absolutePath ||
-      !fsSync.existsSync(absolutePath)
+      !fsSync.existsSync(
+        absolutePath,
+      )
     ) {
       return res.status(404).json({
         success: false,
-        message: "Resource file is unavailable.",
+        message:
+          "Resource file is unavailable.",
       });
     }
 
@@ -460,17 +678,23 @@ async function downloadCourseMaterial(req, res) {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to download resource.",
+      message:
+        "Failed to download resource.",
     });
   }
 }
 
-async function deleteCourseMaterial(req, res) {
+async function deleteCourseMaterial(
+  req,
+  res,
+) {
   try {
     const { id } = req.params;
 
     const material =
-      await CourseMaterial.findById(id);
+      await CourseMaterial.findById(
+        id,
+      );
 
     if (!material) {
       return res.status(404).json({
@@ -479,18 +703,45 @@ async function deleteCourseMaterial(req, res) {
       });
     }
 
-    const absolutePath =
-      getMaterialAbsolutePath(material);
+    /*
+     * Delete the permanent Cloudinary asset
+     * before removing the database record.
+     */
+    if (
+      material.storageProvider ===
+      "cloudinary" &&
+      material.storageKey
+    ) {
+      await deleteCloudinaryAsset(
+        material.storageKey,
+        {
+          resourceType: "raw",
+        },
+      );
+    }
 
-    await CourseMaterial.findByIdAndDelete(id);
+    /*
+     * Existing local material cleanup.
+     */
+    const absolutePath =
+      getMaterialAbsolutePath(
+        material,
+      );
+
+    await CourseMaterial.findByIdAndDelete(
+      id,
+    );
 
     if (absolutePath) {
-      await fs.unlink(absolutePath).catch(() => {});
+      await fs
+        .unlink(absolutePath)
+        .catch(() => {});
     }
 
     return res.json({
       success: true,
-      message: "Course material deleted successfully.",
+      message:
+        "Course material deleted successfully.",
     });
   } catch (error) {
     console.error(
@@ -500,7 +751,8 @@ async function deleteCourseMaterial(req, res) {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to delete resource.",
+      message:
+        "Failed to delete resource.",
     });
   }
 }

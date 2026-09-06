@@ -22,17 +22,26 @@ function ensureCloudinaryConfigured() {
   }
 }
 
-async function uploadCourseBanner(filePath, options = {}) {
+async function uploadCourseBanner(
+  filePath,
+  options = {},
+) {
   ensureCloudinaryConfigured();
 
-  const result = await cloudinary.uploader.upload(filePath, {
-    folder: options.folder || "jobway/course-banners",
-    resource_type: "image",
-    use_filename: true,
-    unique_filename: true,
-    overwrite: false,
-    type: "upload",
-  });
+  const result =
+    await cloudinary.uploader.upload(
+      filePath,
+      {
+        folder:
+          options.folder ||
+          "jobway/course-banners",
+        resource_type: "image",
+        use_filename: true,
+        unique_filename: true,
+        overwrite: false,
+        type: "upload",
+      },
+    );
 
   return {
     publicId: result.public_id,
@@ -44,17 +53,60 @@ async function uploadCourseBanner(filePath, options = {}) {
   };
 }
 
-async function deleteCloudinaryAsset(publicId) {
+/*
+ * Course materials are stored as Cloudinary RAW assets.
+ *
+ * This is important because PDFs and DOCX files are not
+ * image assets and should not use resource_type: "image".
+ */
+async function uploadCourseMaterial(
+  filePath,
+  options = {},
+) {
+  ensureCloudinaryConfigured();
+
+  const result =
+    await cloudinary.uploader.upload(
+      filePath,
+      {
+        folder:
+          options.folder ||
+          "jobway/course-materials",
+        resource_type: "raw",
+        use_filename: true,
+        unique_filename: true,
+        overwrite: false,
+        type: "upload",
+      },
+    );
+
+  return {
+    publicId: result.public_id,
+    secureUrl: result.secure_url,
+    format: result.format,
+    bytes: result.bytes,
+    resourceType: result.resource_type,
+  };
+}
+
+async function deleteCloudinaryAsset(
+  publicId,
+  options = {},
+) {
   ensureCloudinaryConfigured();
 
   if (!publicId) {
     return null;
   }
 
-  return cloudinary.uploader.destroy(publicId, {
-    resource_type: "image",
-    type: "upload",
-  });
+  return cloudinary.uploader.destroy(
+    publicId,
+    {
+      resource_type:
+        options.resourceType || "image",
+      type: options.type || "upload",
+    },
+  );
 }
 
 module.exports = {
@@ -62,5 +114,6 @@ module.exports = {
   isCloudinaryConfigured,
   ensureCloudinaryConfigured,
   uploadCourseBanner,
+  uploadCourseMaterial,
   deleteCloudinaryAsset,
 };
