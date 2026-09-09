@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:5001/api/:path*",
+        destination: "https://jobway-ttvo.onrender.com/api/:path*",
       },
     ];
   },
