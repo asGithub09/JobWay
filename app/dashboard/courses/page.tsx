@@ -14,8 +14,6 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
-
-import StudentPortalShell from "@/components/student-portal/StudentPortalShell";
 import {
   getMyCourses,
   type GetMyCoursesResponse,
@@ -310,7 +308,7 @@ export default function MyCoursesPage() {
   });
 
   return (
-    <StudentPortalShell>
+
       <main className="min-h-screen bg-slate-50">
         {/* Header */}
         <header className="border-b border-slate-200 bg-white">
@@ -505,6 +503,6 @@ export default function MyCoursesPage() {
           )}
         </section>
       </main>
-    </StudentPortalShell>
+
   );
 }

@@ -3,27 +3,148 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const PRELOADER_MIN_TIME = 650;
+const PRELOADER_MIN_TIME = 350;
+const PRELOADER_FADE_TIME = 180;
+
+/*
+ * ============================================================
+ * ROUTE HELPERS
+ * ============================================================
+ */
+
+/**
+ * Dashboard/application routes.
+ *
+ * These routes are treated as one persistent application.
+ * The global full-screen preloader does NOT appear when
+ * navigating between these pages.
+ */
+function isDashboardArea(pathname: string) {
+  return (
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/") ||
+    pathname === "/courses" ||
+    pathname.startsWith("/courses/") ||
+    pathname === "/test-series" ||
+    pathname.startsWith("/test-series/") ||
+    pathname === "/exams" ||
+    pathname.startsWith("/exams/") ||
+    pathname === "/resources" ||
+    pathname.startsWith("/resources/") ||
+    pathname === "/educator" ||
+    pathname.startsWith("/educator/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/")
+  );
+}
+
+/**
+ * Actual examination experience.
+ *
+ * The exam interface controls its own fullscreen,
+ * timer, camera/microphone and proctoring state.
+ *
+ * GlobalPreloader must never interfere with it.
+ */
+function isActiveExamArea(pathname: string) {
+  return (
+    pathname.startsWith("/mock-tests/") &&
+    pathname.endsWith("/start")
+  );
+}
+
+/*
+ * ============================================================
+ * COMPONENT
+ * ============================================================
+ */
 
 export default function GlobalPreloader() {
   const pathname = usePathname();
 
-  const [visible, setVisible] = useState(true);
-  const [fading, setFading] = useState(false);
+  const dashboardArea =
+    isDashboardArea(pathname);
 
-  const firstRender = useRef(true);
-  const navigationStartedAt = useRef(Date.now());
+  const activeExamArea =
+    isActiveExamArea(pathname);
 
   /*
-   * Hide the loader after the current page is ready.
+   * Important:
+   *
+   * Initialize the loader based on the current route.
+   *
+   * This prevents a full-screen loader flash when the user
+   * directly opens a dashboard page.
    */
+  const [visible, setVisible] = useState(
+    !dashboardArea && !activeExamArea,
+  );
+
+  const [fading, setFading] =
+    useState(false);
+
+  const firstRender = useRef(true);
+
+  const navigationStartedAt =
+    useRef(Date.now());
+
+  /*
+   * ==========================================================
+   * ROUTE CHANGE HANDLING
+   * ==========================================================
+   */
+
   useEffect(() => {
-    let fadeTimer: ReturnType<typeof setTimeout> | undefined;
-    let hideTimer: ReturnType<typeof setTimeout> | undefined;
+    let fadeTimer:
+      | ReturnType<typeof setTimeout>
+      | undefined;
+
+    let hideTimer:
+      | ReturnType<typeof setTimeout>
+      | undefined;
+
+    /*
+     * --------------------------------------------------------
+     * DASHBOARD / APPLICATION
+     * --------------------------------------------------------
+     *
+     * Never show the global loader here.
+     *
+     * The dashboard shell remains visible and Next.js changes
+     * only the page content.
+     */
+
+    if (
+      dashboardArea ||
+      activeExamArea
+    ) {
+      setVisible(false);
+      setFading(false);
+
+      navigationStartedAt.current =
+        Date.now();
+
+      return () => {
+        if (fadeTimer) {
+          clearTimeout(fadeTimer);
+        }
+
+        if (hideTimer) {
+          clearTimeout(hideTimer);
+        }
+      };
+    }
+
+    /*
+     * --------------------------------------------------------
+     * PUBLIC PAGE LOADING
+     * --------------------------------------------------------
+     */
 
     const finishLoading = () => {
       const elapsed =
-        Date.now() - navigationStartedAt.current;
+        Date.now() -
+        navigationStartedAt.current;
 
       const remaining = Math.max(
         PRELOADER_MIN_TIME - elapsed,
@@ -36,18 +157,26 @@ export default function GlobalPreloader() {
         hideTimer = setTimeout(() => {
           setVisible(false);
           setFading(false);
-        }, 400);
+        }, PRELOADER_FADE_TIME);
       }, remaining);
     };
 
     /*
-     * First page load.
+     * --------------------------------------------------------
+     * FIRST PUBLIC PAGE LOAD
+     * --------------------------------------------------------
      */
+
     if (firstRender.current) {
       firstRender.current = false;
-      navigationStartedAt.current = Date.now();
 
-      if (document.readyState === "complete") {
+      navigationStartedAt.current =
+        Date.now();
+
+      if (
+        document.readyState ===
+        "complete"
+      ) {
         finishLoading();
       } else {
         window.addEventListener(
@@ -58,9 +187,17 @@ export default function GlobalPreloader() {
       }
     } else {
       /*
-       * Next.js has rendered the new route.
+       * A public route has changed.
+       *
+       * Keep the branded public preloader.
        */
-      navigationStartedAt.current = Date.now();
+
+      navigationStartedAt.current =
+        Date.now();
+
+      setFading(false);
+      setVisible(true);
+
       finishLoading();
     }
 
@@ -78,19 +215,33 @@ export default function GlobalPreloader() {
         clearTimeout(hideTimer);
       }
     };
-  }, [pathname]);
+  }, [
+    pathname,
+    dashboardArea,
+    activeExamArea,
+  ]);
 
   /*
-   * Detect internal navigation clicks.
+   * ============================================================
+   * INTERNAL NAVIGATION CLICK HANDLING
+   * ============================================================
    *
-   * This makes the loader appear immediately when
-   * the user clicks an internal link.
+   * The important change:
+   *
+   * If the destination is another dashboard/application route,
+   * we do NOTHING.
+   *
+   * Next.js handles the URL transition normally.
    */
+
   useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
+    const handleClick = (
+      event: MouseEvent,
+    ) => {
       /*
        * Only normal left-clicks.
        */
+
       if (
         event.defaultPrevented ||
         event.button !== 0 ||
@@ -110,7 +261,9 @@ export default function GlobalPreloader() {
       }
 
       const anchor =
-        target.closest("a") as HTMLAnchorElement | null;
+        target.closest(
+          "a",
+        ) as HTMLAnchorElement | null;
 
       if (!anchor) {
         return;
@@ -119,13 +272,19 @@ export default function GlobalPreloader() {
       /*
        * Ignore downloads.
        */
-      if (anchor.hasAttribute("download")) {
+
+      if (
+        anchor.hasAttribute(
+          "download",
+        )
+      ) {
         return;
       }
 
       /*
        * Ignore new tabs/windows.
        */
+
       if (
         anchor.target === "_blank" ||
         anchor.target === "_new"
@@ -136,8 +295,11 @@ export default function GlobalPreloader() {
       /*
        * Ignore JavaScript URLs.
        */
+
       if (
-        anchor.href.startsWith("javascript:")
+        anchor.href.startsWith(
+          "javascript:",
+        )
       ) {
         return;
       }
@@ -150,6 +312,7 @@ export default function GlobalPreloader() {
       /*
        * Ignore external websites.
        */
+
       if (
         url.origin !==
         window.location.origin
@@ -159,11 +322,8 @@ export default function GlobalPreloader() {
 
       /*
        * Ignore same-page hash navigation.
-       *
-       * Example:
-       * /#courses
-       * /dashboard#profile
        */
+
       if (
         url.pathname ===
           window.location.pathname &&
@@ -175,14 +335,16 @@ export default function GlobalPreloader() {
       }
 
       /*
-       * Ignore any hash-only navigation.
+       * Ignore hash-only navigation.
        */
+
       if (
         url.pathname ===
           window.location.pathname &&
         url.search ===
           window.location.search &&
-        url.hash !== window.location.hash
+        url.hash !==
+          window.location.hash
       ) {
         return;
       }
@@ -190,6 +352,7 @@ export default function GlobalPreloader() {
       /*
        * Ignore clicking the current URL.
        */
+
       if (
         url.pathname ===
           window.location.pathname &&
@@ -200,8 +363,69 @@ export default function GlobalPreloader() {
       }
 
       /*
-       * This is an internal page navigation.
+       * --------------------------------------------------------
+       * ACTIVE EXAM
+       * --------------------------------------------------------
+       *
+       * Never interfere with the examination interface.
        */
+
+      if (
+        isActiveExamArea(
+          url.pathname,
+        )
+      ) {
+        setVisible(false);
+        setFading(false);
+
+        return;
+      }
+
+      /*
+       * --------------------------------------------------------
+       * DASHBOARD NAVIGATION
+       * --------------------------------------------------------
+       *
+       * THIS IS THE IMPORTANT PART.
+       *
+       * When moving:
+       *
+       * /dashboard
+       *      ↓
+       * /courses
+       *
+       * or:
+       *
+       * /courses
+       *      ↓
+       * /test-series
+       *
+       * or:
+       *
+       * /dashboard/results
+       *      ↓
+       * /dashboard/profile
+       *
+       * we do NOT show the global loader.
+       */
+
+      if (
+        isDashboardArea(
+          url.pathname,
+        )
+      ) {
+        return;
+      }
+
+      /*
+       * --------------------------------------------------------
+       * PUBLIC NAVIGATION
+       * --------------------------------------------------------
+       *
+       * For normal public pages, retain the branded
+       * full-screen JobWay transition.
+       */
+
       navigationStartedAt.current =
         Date.now();
 
@@ -224,9 +448,28 @@ export default function GlobalPreloader() {
     };
   }, []);
 
-  if (!visible) {
+  /*
+   * ============================================================
+   * NOTHING TO RENDER
+   * ============================================================
+   */
+
+  if (
+    !visible ||
+    dashboardArea ||
+    activeExamArea
+  ) {
     return null;
   }
+
+  /*
+   * ============================================================
+   * PUBLIC JOBWAY PRELOADER
+   * ============================================================
+   *
+   * This is intentionally kept unchanged in appearance.
+   * It is only used outside the application/dashboard area.
+   */
 
   return (
     <div

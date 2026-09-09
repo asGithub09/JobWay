@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { AdminNavbar } from "./AdminNavbar";
+import { DashboardNavbar } from "@/components/layout/DashboardNavbar";
 import { AdminSidebar } from "./AdminSidebar";
 
 interface AdminShellProps {
@@ -23,11 +23,7 @@ export function AdminShell({
       />
 
       <div className="lg:pl-[270px]">
-        <AdminNavbar
-          onMenuClick={() =>
-            setMobileOpen(true)
-          }
-        />
+        <DashboardNavbar role="admin" onMenuClick={() => setMobileOpen(true)} />
 
         <main className="min-h-[calc(100vh-76px)]">
           {children}

@@ -1,4 +1,4 @@
-﻿const API_BASE_URL =
+const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:5001/api";
 
@@ -81,7 +81,7 @@ export interface AuthUser {
   email: string;
   phone: string;
   isEmailVerified: boolean;
-  role: "student" | "admin";
+  role: "student" | "admin" | "educator";
 }
 
 export interface AuthResponse {
@@ -99,6 +99,161 @@ export interface UpdateProfilePayload {
   phone?: string;
 }
 
+/* ============================================================
+   FACULTY INVITATION Ã¢â‚¬â€ EDUCATOR ONBOARDING
+   ============================================================ */
+
+export interface FacultyInvitationValidation {
+  id: string;
+  email: string;
+  name: string;
+  status: "pending" | "accepted" | "revoked" | "expired";
+  expiresAt: string;
+}
+
+export interface ValidateFacultyInvitationResponse {
+  success: boolean;
+  invitation: FacultyInvitationValidation;
+}
+
+export interface AcceptFacultyInvitationPayload {
+  name: string;
+  phone: string;
+  password: string;
+}
+
+export interface AcceptFacultyInvitationResponse {
+  success: boolean;
+  message: string;
+  token?: string;
+  user?: AuthUser;
+}
+
+export async function validateFacultyInvitation(
+  token: string,
+): Promise<ValidateFacultyInvitationResponse> {
+  return request<ValidateFacultyInvitationResponse>(
+    `/faculty/invitations/validate/${encodeURIComponent(token)}`,
+    {
+      method: "GET",
+    },
+  );
+}
+
+export async function acceptFacultyInvitation(
+  token: string,
+  payload: AcceptFacultyInvitationPayload,
+): Promise<AcceptFacultyInvitationResponse> {
+  return request<AcceptFacultyInvitationResponse>(
+    `/faculty/invitations/accept/${encodeURIComponent(token)}`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+export interface FacultyInvitation {
+  id: string;
+  email: string;
+  name: string;
+  status: "pending" | "accepted" | "revoked" | "expired";
+  expiresAt: string;
+  invitedBy?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+  } | null;
+  acceptedBy?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+  } | null;
+  acceptedAt?: string | null;
+  revokedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFacultyInvitationPayload {
+  email: string;
+  name?: string;
+}
+
+export interface CreateFacultyInvitationResponse {
+  success: boolean;
+  message: string;
+  invitation: FacultyInvitation;
+}
+
+export interface ListFacultyInvitationsResponse {
+  success: boolean;
+  invitations: FacultyInvitation[];
+}
+
+export interface RevokeFacultyInvitationResponse {
+  success: boolean;
+  message: string;
+  invitation: FacultyInvitation;
+}
+
+export async function createFacultyInvitation(
+  payload: CreateFacultyInvitationPayload,
+): Promise<CreateFacultyInvitationResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<CreateFacultyInvitationResponse>(
+    "/faculty/invitations",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function listFacultyInvitations(): Promise<ListFacultyInvitationsResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<ListFacultyInvitationsResponse>(
+    "/faculty/invitations",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+export async function revokeFacultyInvitation(
+  id: string,
+): Promise<RevokeFacultyInvitationResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<RevokeFacultyInvitationResponse>(
+    `/faculty/invitations/${encodeURIComponent(id)}/revoke`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
 /* ============================================================
    AUTH FUNCTIONS
    ============================================================ */
@@ -330,6 +485,8 @@ export interface Course {
   syllabus: CourseSyllabusItem[];
   isFeatured: boolean;
   isPublished: boolean;
+    isLandingPagePublished: boolean;
+    educatorCourse: string | null;
   interestedCount: number;
   enrolledCount: number;
   createdAt: string;
@@ -442,7 +599,7 @@ export async function createLead(
 }
 
 /* ============================================================
-   ADMIN — GET LEADS
+   ADMIN Ã¢â‚¬â€ GET LEADS
    ============================================================ */
 
 export async function getLeads(
@@ -508,7 +665,7 @@ export async function getLeads(
 }
 
 /* ============================================================
-   ADMIN — UPDATE LEAD STATUS
+   ADMIN Ã¢â‚¬â€ UPDATE LEAD STATUS
    ============================================================ */
 
 export interface UpdateLeadStatusResponse {
@@ -673,7 +830,7 @@ export async function deleteCourseCategory(
 }
 
 /* ============================================================
-   COURSES — PUBLIC
+   COURSES Ã¢â‚¬â€ PUBLIC
    ============================================================ */
 
 /**
@@ -704,7 +861,7 @@ export async function getCourse(
 }
 
 /* ============================================================
-   COURSES — ADMIN
+   COURSES Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 /**
@@ -805,8 +962,39 @@ export async function deleteCourse(
   );
 }
 
+
+/**
+ * Approve or remove a course from the public landing page.
+ *
+ * This is separate from batch learning publication.
+ */
+export async function toggleCourseLandingPage(
+  courseId: string,
+  published: boolean,
+): Promise<CourseMutationResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<CourseMutationResponse>(
+    `/courses/admin/${encodeURIComponent(courseId)}/landing-page`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        published,
+      }),
+    },
+  );
+}
+
 /* ============================================================
-   COURSE FACTORY — ADMIN
+   COURSE FACTORY Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export type CourseDraftLesson = {
@@ -1114,7 +1302,7 @@ export async function uploadCourseImage(
   );
 }
 /* ============================================================
-   COURSE FACTORY — APPROVAL & PUBLISHING
+   COURSE FACTORY Ã¢â‚¬â€ APPROVAL & PUBLISHING
    ============================================================ */
 
 export type ApproveCourseDraftResponse = {
@@ -1359,7 +1547,7 @@ export async function downloadCourseMaterial(
   }, 1_000);
 }
 /* ============================================================
-   EXAMS / MOCK TESTS — ADMIN
+   EXAMS / MOCK TESTS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export interface Exam {
@@ -1499,7 +1687,7 @@ export interface CreateMockTestQuestionPayload {
 }
 
 /* ============================================================
-   EXAMS — PUBLIC
+   EXAMS Ã¢â‚¬â€ PUBLIC
    ============================================================ */
 
 export async function getPublishedExams(): Promise<{
@@ -1525,7 +1713,7 @@ export async function getPublishedExam(
 }
 
 /* ============================================================
-   EXAMS — ADMIN
+   EXAMS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export async function getAdminExams(
@@ -1605,7 +1793,7 @@ export async function deleteExam(
 }
 
 /* ============================================================
-   TEST SERIES — PUBLIC
+   TEST SERIES Ã¢â‚¬â€ PUBLIC
    ============================================================ */
 
 export async function getPublishedTestSeries(
@@ -1625,7 +1813,7 @@ export async function getPublishedTestSeries(
 }
 
 /* ============================================================
-   TEST SERIES — ADMIN
+   TEST SERIES Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export async function getAdminTestSeries(
@@ -1705,7 +1893,7 @@ export async function deleteTestSeries(
 }
 
 /* ============================================================
-   MOCK TESTS — PUBLIC
+   MOCK TESTS Ã¢â‚¬â€ PUBLIC
    ============================================================ */
 
 export async function getPublishedMockTests(
@@ -1741,7 +1929,7 @@ export async function getPublishedMockTest(
 }
 
 /* ============================================================
-   MOCK TEST ATTEMPTS — STUDENT
+   MOCK TEST ATTEMPTS Ã¢â‚¬â€ STUDENT
    ============================================================ */
 
 export interface MockTestAttemptAnswer {
@@ -1967,7 +2155,7 @@ export async function getMyMockTestAttempts(): Promise<GetMyMockTestAttemptsResp
 }
 
 /* ============================================================
-   MOCK TESTS — ADMIN
+   MOCK TESTS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export async function getAdminMockTests(
@@ -2048,7 +2236,7 @@ export async function deleteMockTest(
 }
 
 /* ============================================================
-   QUESTIONS — ADMIN
+   QUESTIONS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export async function createMockTestQuestion(
@@ -2124,7 +2312,7 @@ export async function deleteMockTestQuestion(
 
 
 /* ============================================================
-   MOCK TEST QUESTIONS — UPDATE
+   MOCK TEST QUESTIONS Ã¢â‚¬â€ UPDATE
    ============================================================ */
 
 export async function updateMockTestQuestion(
@@ -2154,7 +2342,7 @@ export async function updateMockTestQuestion(
 
 
 /* ============================================================
-   BATCHES — ADMIN
+   BATCHES Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export type BatchStatus =
@@ -2303,7 +2491,7 @@ export async function updateBatchStatus(
 }
 
 /* ============================================================
-   BATCH STUDENTS — ADMIN
+   BATCH STUDENTS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export interface BatchStudent {
@@ -2491,7 +2679,7 @@ export async function getBatchStudentCount(
   );
 }
 /* ============================================================
-   STUDENTS — ADMIN
+   STUDENTS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export interface StudentCurrentBatch {
@@ -2652,7 +2840,7 @@ export async function unassignStudentFromBatch(
   );
 }
 /* ============================================================
-   BATCH COURSES — ADMIN
+   BATCH COURSES Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export interface BatchCourse {
@@ -2806,7 +2994,7 @@ export async function removeCourseFromBatch(
   );
 }
 /* ============================================================
-   STUDENT COURSES — BATCH ACCESS
+   STUDENT COURSES Ã¢â‚¬â€ BATCH ACCESS
    ============================================================ */
 
 export interface StudentCourseBatch {
@@ -2882,7 +3070,7 @@ export async function getMyCourse(
 }
 
 /* ============================================================
-   STUDENT TEST SERIES — BATCH ACCESS
+   STUDENT TEST SERIES Ã¢â‚¬â€ BATCH ACCESS
    ============================================================ */
 
 export interface StudentTestSeriesBatch {
@@ -3233,7 +3421,7 @@ export async function getStudentCertificate(
   );
 }
 /* ============================================================
-   BATCH TEST SERIES — ADMIN
+   BATCH TEST SERIES Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export interface BatchTestSeriesExam {
@@ -3386,6 +3574,664 @@ export async function removeTestSeriesFromBatch(
     )}`,
     {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+/* ============================================================
+   BATCH EDUCATORS Ã¢â‚¬â€ ADMIN / EDUCATOR
+   ============================================================ */
+
+export interface BatchEducator {
+  assignmentId: string;
+
+  educator: {
+    _id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    isEmailVerified?: boolean;
+    isActive?: boolean;
+    role: "educator";
+    createdAt?: string;
+  };
+
+  status: "active" | "inactive";
+  assignedAt: string;
+  assignedBy?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BatchEducatorSearchResult {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  isEmailVerified?: boolean;
+  isActive?: boolean;
+  role: "educator";
+  createdAt?: string;
+}
+
+export interface GetBatchEducatorsResponse {
+  success: boolean;
+  batch: Batch;
+  educators: BatchEducator[];
+  total: number;
+}
+
+export interface SearchBatchEducatorsResponse {
+  success: boolean;
+  educators: BatchEducatorSearchResult[];
+}
+
+export interface AddEducatorsToBatchResponse {
+  success: boolean;
+  message: string;
+  addedCount: number;
+  reactivatedCount: number;
+  skippedCount: number;
+  educators: BatchEducatorSearchResult[];
+}
+
+export interface RemoveEducatorFromBatchResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface MyBatchAssignment {
+  assignmentId: string;
+
+  batch: Batch;
+
+  status: "active" | "inactive";
+
+  assignedAt: string;
+}
+
+export interface GetMyBatchesResponse {
+  success: boolean;
+  batches: MyBatchAssignment[];
+  total: number;
+}
+
+/*
+ * Get educators currently assigned to a batch.
+ *
+ * GET
+ * /api/batch-educators/batch/:batchId/educators
+ */
+export async function getBatchEducators(
+  batchId: string,
+  search = "",
+): Promise<GetBatchEducatorsResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error(
+      "Authentication required",
+    );
+  }
+
+  const query = new URLSearchParams();
+
+  if (search.trim()) {
+    query.set(
+      "search",
+      search.trim(),
+    );
+  }
+
+  const queryString =
+    query.toString();
+
+  return request<GetBatchEducatorsResponse>(
+    `/batch-educators/batch/${encodeURIComponent(
+      batchId,
+    )}/educators${
+      queryString
+        ? `?${queryString}`
+        : ""
+    }`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+/*
+ * Search active educators who are not
+ * already assigned to a batch.
+ *
+ * GET
+ * /api/batch-educators/batch/:batchId/available-educators
+ */
+export async function searchBatchEducators(
+  batchId: string,
+  search = "",
+): Promise<SearchBatchEducatorsResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error(
+      "Authentication required",
+    );
+  }
+
+  const query = new URLSearchParams();
+
+  if (search.trim()) {
+    query.set(
+      "search",
+      search.trim(),
+    );
+  }
+
+  const queryString =
+    query.toString();
+
+  return request<SearchBatchEducatorsResponse>(
+    `/batch-educators/batch/${encodeURIComponent(
+      batchId,
+    )}/available-educators${
+      queryString
+        ? `?${queryString}`
+        : ""
+    }`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+/*
+ * Assign one or multiple educators to a batch.
+ *
+ * POST
+ * /api/batch-educators/batch/:batchId/educators
+ */
+export async function addEducatorsToBatch(
+  batchId: string,
+  educatorIds: string[],
+): Promise<AddEducatorsToBatchResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error(
+      "Authentication required",
+    );
+  }
+
+  return request<AddEducatorsToBatchResponse>(
+    `/batch-educators/batch/${encodeURIComponent(
+      batchId,
+    )}/educators`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type":
+          "application/json",
+      },
+      body: JSON.stringify({
+        educatorIds,
+      }),
+    },
+  );
+}
+
+/*
+ * Remove an educator from a batch.
+ *
+ * DELETE
+ * /api/batch-educators/batch/:batchId/educators/:educatorId
+ */
+export async function removeEducatorFromBatch(
+  batchId: string,
+  educatorId: string,
+): Promise<RemoveEducatorFromBatchResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error(
+      "Authentication required",
+    );
+  }
+
+  return request<RemoveEducatorFromBatchResponse>(
+    `/batch-educators/batch/${encodeURIComponent(
+      batchId,
+    )}/educators/${encodeURIComponent(
+      educatorId,
+    )}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+/*
+ * Get batches assigned to the
+ * authenticated educator.
+ *
+ * GET
+ * /api/batch-educators/my-batches
+ */
+export async function getMyBatches(): Promise<GetMyBatchesResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error(
+      "Authentication required",
+    );
+  }
+
+  return request<GetMyBatchesResponse>(
+    "/batch-educators/my-batches",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+/* ============================================================
+   EDUCATOR EMS Ã¢â‚¬â€ STUDENT EXAMS
+   ============================================================ */
+
+export interface StudentEducatorExam {
+  id: string;
+  title: string;
+  slug: string;
+  shortName: string;
+  description: string;
+  category: string;
+  subject: string;
+  topic: string;
+  durationMinutes: number;
+  totalMarks: number;
+  passingPercentage: number;
+  questionCount: number;
+  accessType: "FREE" | "PREMIUM";
+  attemptPolicy:
+    | "SINGLE_ATTEMPT"
+    | "MULTIPLE_ATTEMPTS";
+  maxAttempts: number;
+  publishedAt: string | null;
+  isFeatured: boolean;
+  sortOrder: number;
+}
+
+export interface StudentEducatorExamsResponse {
+  success: boolean;
+  batch: {
+    _id: string;
+    name: string;
+    code: string;
+    status: string;
+  } | null;
+  exams: StudentEducatorExam[];
+  total: number;
+}
+
+export async function getMyEducatorExams(): Promise<StudentEducatorExamsResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    return {
+      success: false,
+      batch: null,
+      exams: [],
+      total: 0,
+    };
+  }
+
+  return request<StudentEducatorExamsResponse>(
+    "/student/educator-exams",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+export interface EducatorExamAttemptQuestionOption {
+  key: string;
+  text: string;
+}
+
+export interface EducatorExamAttemptQuestion {
+  id: string;
+  questionText: string;
+  questionType: string;
+  options: EducatorExamAttemptQuestionOption[];
+  subject: string;
+  topic: string;
+  subtopic: string;
+  difficulty: string;
+  order: number;
+  marks: number;
+  negativeMarks: number;
+}
+
+export interface EducatorExamAttemptAnswer {
+  question: string;
+  selectedAnswers: string[];
+  markedForReview: boolean;
+  answeredAt: string | null;
+}
+
+export interface EducatorExamAttempt {
+  id: string;
+  exam: string;
+  status: string;
+  reentryLocked: boolean;
+  startedAt: string;
+  expiresAt: string;
+  submittedAt: string | null;
+  terminatedAt: string | null;
+  totalQuestions: number;
+  answers: EducatorExamAttemptAnswer[];
+  proctoringEnabled: boolean;
+  cameraVerified: boolean;
+  microphoneVerified: boolean;
+  fullscreenVerified: boolean;
+  strikeCount: number;
+  violations: unknown[];
+  terminationReason: string;
+  accessType: "FREE" | "PREMIUM";
+  entitlementVerified: boolean;
+}
+
+export interface StartEducatorExamResponse {
+  success: boolean;
+  resumed: boolean;
+  message?: string;
+  attempt: EducatorExamAttempt;
+  exam: {
+    id: string;
+    title: string;
+    shortName: string;
+    description: string;
+    instructions: string;
+    category: string;
+    subject: string;
+    topic: string;
+    durationMinutes: number;
+    totalMarks: number;
+    passingPercentage: number;
+    accessType: "FREE" | "PREMIUM";
+    attemptPolicy: "SINGLE_ATTEMPT" | "MULTIPLE_ATTEMPTS";
+    proctoring: {
+      enabled: boolean;
+      requireCamera: boolean;
+      requireMicrophone: boolean;
+      requireFullscreen: boolean;
+      monitorFullscreen: boolean;
+      monitorVisibility: boolean;
+      monitorBlur: boolean;
+      monitorContextMenu: boolean;
+      maxStrikes: number;
+      terminationCountdownSeconds: number;
+    };
+  };
+  questions: EducatorExamAttemptQuestion[];
+}
+
+export interface SaveEducatorExamAnswerPayload {
+  questionId: string;
+  selectedAnswers: string[];
+  markedForReview: boolean;
+}
+
+export interface SaveEducatorExamAnswerResponse {
+  success: boolean;
+  message?: string;
+  attempt: EducatorExamAttempt;
+}
+
+export interface EducatorExamResult {
+  attemptedQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  unansweredQuestions: number;
+  totalMarks: number;
+  obtainedMarks: number;
+  percentage: number;
+  passed: boolean;
+}
+
+export interface SubmitEducatorExamResponse {
+  success: boolean;
+  message?: string;
+  attempt: EducatorExamAttempt;
+  result: EducatorExamResult;
+}
+
+export async function saveEducatorExamAnswer(
+  attemptId: string,
+  payload: SaveEducatorExamAnswerPayload,
+): Promise<SaveEducatorExamAnswerResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<SaveEducatorExamAnswerResponse>(
+    `/educator-exam-attempts/${encodeURIComponent(attemptId)}/answer`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function submitEducatorExam(
+  attemptId: string,
+): Promise<SubmitEducatorExamResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<SubmitEducatorExamResponse>(
+    `/educator-exam-attempts/${encodeURIComponent(attemptId)}/submit`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+export async function startEducatorExam(
+  examId: string,
+): Promise<StartEducatorExamResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<StartEducatorExamResponse>(
+    `/educator-exam-attempts/${encodeURIComponent(examId)}/start`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+export interface EducatorExamResultItem {
+  id: string;
+
+  exam: {
+    id: string;
+    title: string;
+    slug: string;
+    shortName: string;
+    category: string;
+    subject: string;
+    topic: string;
+    durationMinutes: number;
+    totalMarks: number;
+    passingPercentage: number;
+    accessType: "FREE" | "PREMIUM";
+  } | null;
+
+  batch: {
+    id: string;
+    name: string;
+    code: string;
+    status: string;
+  } | null;
+
+  status: "SUBMITTED" | "EXPIRED" | "TERMINATED" | "LOCKED";
+
+  reentryLocked: boolean;
+
+  startedAt: string | null;
+  expiresAt: string | null;
+  submittedAt: string | null;
+  terminatedAt: string | null;
+
+  totalQuestions: number;
+  attemptedQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  unansweredQuestions: number;
+
+  totalMarks: number;
+  obtainedMarks: number;
+  percentage: number;
+  passed: boolean;
+
+  accessType: "FREE" | "PREMIUM";
+  entitlementVerified: boolean;
+
+  proctoringEnabled: boolean;
+  strikeCount: number;
+  terminationReason: string;
+}
+
+export interface GetMyEducatorExamResultsResponse {
+  success: boolean;
+  results: EducatorExamResultItem[];
+  total: number;
+}
+
+export async function getMyEducatorExamResults(): Promise<GetMyEducatorExamResultsResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<GetMyEducatorExamResultsResponse>(
+    "/educator-exam-attempts/my-results",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+export interface EducatorExamReviewOption {
+  key: string;
+  text: string;
+}
+
+export interface EducatorExamWrongAnswer {
+  questionId: string;
+  questionCode: string;
+  questionText: string;
+  questionType: string;
+  options: EducatorExamReviewOption[];
+
+  selectedAnswers: string[];
+  correctAnswers: string[];
+
+  explanation: string;
+
+  subject: string;
+  topic: string;
+  subtopic: string;
+  difficulty: string;
+
+  marks: number;
+  negativeMarks: number;
+}
+
+export interface EducatorExamReviewAttempt {
+  id: string;
+  status: string;
+  submittedAt: string | null;
+
+  totalQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  unansweredQuestions: number;
+
+  obtainedMarks: number;
+  totalMarks: number;
+  percentage: number;
+  passed: boolean;
+}
+
+export interface EducatorExamReviewResponse {
+  success: boolean;
+
+  attempt: EducatorExamReviewAttempt;
+
+  exam: {
+    id: string;
+    title: string;
+    shortName: string;
+    category: string;
+    subject: string;
+    topic: string;
+  } | null;
+
+  wrongAnswers: EducatorExamWrongAnswer[];
+  totalWrong: number;
+}
+
+export async function getEducatorExamReview(
+  attemptId: string,
+): Promise<EducatorExamReviewResponse> {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+
+  return request<EducatorExamReviewResponse>(
+    `/educator-exam-attempts/${encodeURIComponent(attemptId)}/review`,
+    {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },

@@ -10,8 +10,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-
-import StudentPortalShell from "@/components/student-portal/StudentPortalShell";
 import {
   getStudentCertificates,
   type StudentCertificate,
@@ -269,7 +267,7 @@ export default function CertificatesPage() {
   }, []);
 
   return (
-    <StudentPortalShell>
+
       <main className="min-h-screen bg-slate-50">
         {/* =====================================================
             HEADER
@@ -425,6 +423,6 @@ export default function CertificatesPage() {
           )}
         </section>
       </main>
-    </StudentPortalShell>
+
   );
 }

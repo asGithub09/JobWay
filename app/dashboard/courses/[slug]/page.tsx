@@ -1232,26 +1232,21 @@ export default function ProtectedCourseLearningPage() {
 
   if (loading) {
     return (
-      <StudentPortalShell>
-        <LoadingState />
-      </StudentPortalShell>
-    );
+<LoadingState />
+);
   }
 
   if (error || !course) {
     return (
-      <StudentPortalShell>
-        <ErrorState
+<ErrorState
           message={error}
           onRetry={() => void loadCourse()}
         />
-      </StudentPortalShell>
-    );
+);
   }
 
   return (
-    <StudentPortalShell>
-      <div className="min-h-screen bg-slate-50">
+<div className="min-h-screen bg-slate-50">
         {/* =====================================================
             TOP COURSE BAR
            ===================================================== */}
@@ -1851,6 +1846,5 @@ export default function ProtectedCourseLearningPage() {
           </div>
         </main>
       </div>
-    </StudentPortalShell>
-  );
+);
 }

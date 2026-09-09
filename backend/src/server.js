@@ -1,4 +1,4 @@
-﻿require("dotenv").config();
+require("dotenv").config();
 
 const path = require("path");
 const express = require("express");
@@ -20,14 +20,24 @@ const batchTestSeriesRoutes = require("./routes/batchTestSeriesRoutes");
 
 const batchRoutes = require("./routes/batchRoutes");
 const batchMemberRoutes = require("./routes/batchMemberRoutes");
+const batchEducatorRoutes = require("./routes/batchEducatorRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const batchCourseRoutes = require("./routes/batchCourseRoutes");
 const studentCourseRoutes = require("./routes/studentCourseRoutes");
 const studentTestSeriesRoutes = require("./routes/studentTestSeriesRoutes");
+const studentEducatorExamRoutes = require("./routes/studentEducatorExamRoutes");
 const studentCourseProgressRoutes = require("./routes/studentCourseProgressRoutes");
 const studentCertificateRoutes = require("./routes/studentCertificateRoutes");
 const publicCertificateRoutes = require("./routes/publicCertificateRoutes");
 
+const facultyRoutes = require("./routes/facultyRoutes");
+
+const educatorCourseRoutes = require("./routes/educatorCourseRoutes");
+const educatorCourseImportRoutes = require("./routes/educatorCourseImportRoutes");
+
+const educatorExamRoutes = require("./routes/educatorExamRoutes");
+const educatorQuestionRoutes = require("./routes/educatorQuestionRoutes");
+const educatorExamAttemptRoutes = require("./routes/educatorExamAttemptRoutes");
 const app = express();
 
 const PORT = Number(process.env.PORT || 5001);
@@ -128,6 +138,11 @@ app.use(
   courseCategoryRoutes,
 );
 
+/*
+ * Existing Admin Exam API
+ *
+ * KEEPING THIS UNTOUCHED.
+ */
 app.use("/api/exams", examRoutes);
 
 /* =========================================================
@@ -138,9 +153,67 @@ app.use("/api/batches", batchRoutes);
 
 app.use("/api/students", studentRoutes);
 
+app.use("/api/faculty", facultyRoutes);
+
+/* =========================================================
+   EDUCATOR COURSE MANAGEMENT
+   ========================================================= */
+
+app.use(
+  "/api/educator/courses",
+  educatorCourseRoutes,
+);
+
+app.use(
+  "/api/educator/course-import",
+  educatorCourseImportRoutes,
+);
+
+/* =========================================================
+   EDUCATOR EXAM MANAGEMENT
+   ========================================================= */
+
+app.use(
+  "/api/educator/exams",
+  educatorExamRoutes,
+);
+
+/* =========================================================
+   EDUCATOR QUESTION BANK
+   ========================================================= */
+
+app.use(
+  "/api/educator/questions",
+  educatorQuestionRoutes,
+);
+/* =========================================================
+   STUDENT — EDUCATOR EMS EXAM ATTEMPTS
+   ========================================================= */
+
+app.use(
+  "/api/educator-exam-attempts",
+  educatorExamAttemptRoutes,
+);
+
+/* =========================================================
+   BATCH MEMBERS
+   ========================================================= */
+
 app.use(
   "/api/batch-members",
   batchMemberRoutes,
+);
+
+/*
+ * Educator ↔ Batch assignment and educator
+ * batch access.
+ *
+ * This remains isolated from BatchMember,
+ * which continues to manage student membership.
+ */
+app.use(
+  "/api/batch-educators",
+  batchEducatorRoutes,
 );
 
 app.use(
@@ -165,10 +238,17 @@ app.use(
   "/api/student/courses",
   studentCourseRoutes,
 );
+
 app.use(
   "/api/student/test-series",
   studentTestSeriesRoutes,
 );
+
+app.use(
+  "/api/student/educator-exams",
+  studentEducatorExamRoutes,
+);
+
 /* =========================================================
    STUDENT COURSE PROGRESS
    ========================================================= */
@@ -286,6 +366,10 @@ async function startServer() {
       );
 
       console.log(
+        "Batch Educator API enabled",
+      );
+
+      console.log(
         "Student API enabled",
       );
 
@@ -307,6 +391,14 @@ async function startServer() {
 
       console.log(
         "Student Certificate API enabled",
+      );
+
+      console.log(
+        "Educator Exam API enabled",
+      );
+
+      console.log(
+        "Educator Question Bank API enabled",
       );
     });
   } catch (error) {

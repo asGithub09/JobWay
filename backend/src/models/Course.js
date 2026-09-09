@@ -309,6 +309,16 @@ const courseSchema = new mongoose.Schema(
       default: "",
     },
 
+    /*
+     * Links a student-facing Course to its educator-authored source.
+     */
+    educatorCourse: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "EducatorCourse",
+      default: null,
+      index: true,
+    },
+
     features: {
       type: [String],
       default: [],
@@ -360,6 +370,18 @@ const courseSchema = new mongoose.Schema(
     },
 
     isPublished: {
+      type: Boolean,
+      default: false,
+    },
+
+    /*
+     * Controls public landing-page visibility separately from
+     * authenticated batch learning access.
+     *
+     * isPublished = available to assigned students
+     * isLandingPagePublished = approved for public /courses
+     */
+    isLandingPagePublished: {
       type: Boolean,
       default: false,
     },

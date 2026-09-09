@@ -517,21 +517,18 @@ export default function AttemptResultPage() {
 
   if (!isAuthenticated || user?.role === "admin") {
     return (
-      <StudentPortalShell>
-        <div className="flex min-h-screen items-center justify-center bg-[#f6f8fc]">
+<div className="flex min-h-screen items-center justify-center bg-[#f6f8fc]">
           <div className="rounded-2xl border border-slate-200 bg-white px-6 py-5 text-center shadow-sm">
             <p className="text-sm font-bold text-slate-700">
               Redirecting...
             </p>
           </div>
         </div>
-      </StudentPortalShell>
-    );
+);
   }
 
   return (
-    <StudentPortalShell>
-      <div className="min-h-screen bg-[#f6f8fc] px-4 py-6 sm:px-6 lg:px-8">
+<div className="min-h-screen bg-[#f6f8fc] px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           {/* Top actions */}
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -965,6 +962,5 @@ export default function AttemptResultPage() {
           )}
         </div>
       </div>
-    </StudentPortalShell>
-  );
+);
 }

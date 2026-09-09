@@ -222,7 +222,7 @@ function PromotionalBanner({
   slide: HeroSlide;
 }) {
   return (
-    <div className="relative w-full">
+    <div className="relative w-full animate-[pulse_6s_ease-in-out_infinite]">
       {/* Soft banner glow */}
       <div
         className="absolute -inset-6 rounded-[2.5rem] bg-red-100/60 blur-3xl"
@@ -256,12 +256,12 @@ function PromotionalBanner({
 
         {/* Decorative circles */}
         <div
-          className="absolute -right-20 -top-24 h-64 w-64 rounded-full border-[38px] border-yellow-300/20"
+          className="absolute -right-20 -top-24 h-64 w-64 animate-[spin_18s_linear_infinite] rounded-full border-[38px] border-yellow-300/20"
           aria-hidden="true"
         />
 
         <div
-          className="absolute -bottom-28 -left-20 h-56 w-56 rounded-full border-[30px] border-yellow-300/10"
+          className="absolute -bottom-28 -left-20 h-56 w-56 animate-[spin_22s_linear_infinite_reverse] rounded-full border-[30px] border-yellow-300/10"
           aria-hidden="true"
         />
 

@@ -195,8 +195,7 @@ async function loadCertificate() {
 
   if (loading) {
     return (
-      <StudentPortalShell>
-        <main className="min-h-screen bg-slate-50">
+<main className="min-h-screen bg-slate-50">
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
             <div className="mb-6 h-5 w-40 animate-pulse rounded-lg bg-slate-200" />
 
@@ -205,14 +204,12 @@ async function loadCertificate() {
             </div>
           </div>
         </main>
-      </StudentPortalShell>
-    );
+);
   }
 
   if (error || !certificate) {
     return (
-      <StudentPortalShell>
-        <main className="min-h-screen bg-slate-50">
+<main className="min-h-screen bg-slate-50">
           <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
             <button
               type="button"
@@ -256,14 +253,12 @@ async function loadCertificate() {
             </div>
           </div>
         </main>
-      </StudentPortalShell>
-    );
+);
   }
 
   return (
     <>
-      <StudentPortalShell>
-        <main className="min-h-screen bg-slate-50 print:min-h-0 print:bg-white">
+<main className="min-h-screen bg-slate-50 print:min-h-0 print:bg-white">
           {/* =====================================================
               ACTION BAR
              ===================================================== */}
@@ -533,9 +528,7 @@ async function loadCertificate() {
             </p>
           </section>
         </main>
-      </StudentPortalShell>
-
-      {/* =========================================================
+{/* =========================================================
           PRINT STYLES
          ========================================================= */}
 

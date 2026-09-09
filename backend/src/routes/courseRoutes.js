@@ -8,6 +8,7 @@ const {
   updateCourse,
   toggleCoursePublish,
   deleteCourse,
+  toggleCourseLandingPage,
 } = require("../controllers/courseController");
 
 const {
@@ -55,6 +56,14 @@ router.patch(
   authenticateToken,
   authorizeAdmin,
   toggleCoursePublish,
+);
+
+
+router.patch(
+  "/admin/:id/landing-page",
+  authenticateToken,
+  authorizeAdmin,
+  toggleCourseLandingPage,
 );
 
 router.delete(

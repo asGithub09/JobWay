@@ -1,0 +1,101 @@
+const express = require("express");
+const multer = require("multer");
+const path = require("path");
+const os = require("os");
+
+const {
+  authenticateToken,
+  authorizeEducator,
+} = require("../middleware/authMiddleware");
+
+const {
+  importCourseMaterial,
+} = require("../controllers/educatorCourseImportController");
+
+const {
+  getDrafts,
+  getDraft,
+  updateDraft,
+  saveDraftAsCourse,
+  deleteDraft,
+} = require("../controllers/educatorCourseDraftController");
+
+const router = express.Router();
+
+const upload = multer({
+  dest: path.join(
+    os.tmpdir(),
+    "jobway-educator-course-imports"
+  ),
+
+  limits: {
+    fileSize: 25 * 1024 * 1024,
+  },
+
+  fileFilter: (req, file, callback) => {
+    const extension = path
+      .extname(file.originalname || "")
+      .toLowerCase();
+
+    const allowedExtensions = new Set([
+      ".pdf",
+      ".docx",
+      ".xlsx",
+      ".xls",
+    ]);
+
+    if (!allowedExtensions.has(extension)) {
+      return callback(
+        new Error(
+          "Only PDF, DOCX, XLSX and XLS files are supported."
+        )
+      );
+    }
+
+    callback(null, true);
+  },
+});
+
+router.use(
+  authenticateToken,
+  authorizeEducator
+);
+
+/*
+ * Course material import
+ */
+router.post(
+  "/",
+  upload.single("file"),
+  importCourseMaterial
+);
+
+/*
+ * Course draft review
+ */
+router.get(
+  "/drafts",
+  getDrafts
+);
+
+router.get(
+  "/drafts/:id",
+  getDraft
+);
+
+router.patch(
+  "/drafts/:id",
+  updateDraft
+);
+
+router.post(
+  "/drafts/:id/save",
+  saveDraftAsCourse
+);
+
+router.delete(
+  "/drafts/:id",
+  deleteDraft
+);
+
+module.exports = router;

@@ -1,0 +1,121 @@
+JOBWAY – EXAM QUESTION BANK
+
+EXAM / SUBJECT: Geology
+TOPIC: Physical Geology
+LANGUAGE: English
+DIFFICULTY: Medium
+
+--------------------------------------------------
+
+QUESTION 001
+
+QUESTION:
+What is the study of Earth called?
+
+OPTION A:
+Geology
+
+OPTION B:
+Biology
+
+OPTION C:
+Astronomy
+
+OPTION D:
+Ecology
+
+CORRECT ANSWER:
+A
+
+EXPLANATION:
+Geology is the scientific study of the Earth, including its materials, structure, processes and history.
+
+SUBJECT:
+Geology
+
+TOPIC:
+Introduction to Geology
+
+DIFFICULTY:
+Easy
+
+MARKS:
+1
+
+--------------------------------------------------
+
+QUESTION 002
+
+QUESTION:
+Which layer of the Earth is located directly below the crust?
+
+OPTION A:
+Inner Core
+
+OPTION B:
+Mantle
+
+OPTION C:
+Outer Core
+
+OPTION D:
+Atmosphere
+
+CORRECT ANSWER:
+B
+
+EXPLANATION:
+The mantle lies directly beneath the Earth's crust.
+
+SUBJECT:
+Geology
+
+TOPIC:
+Earth Structure
+
+DIFFICULTY:
+Easy
+
+MARKS:
+1
+
+--------------------------------------------------
+
+QUESTION 003
+
+QUESTION:
+Which process is primarily responsible for the formation of sedimentary rocks?
+
+OPTION A:
+Cooling of magma
+
+OPTION B:
+Compaction and cementation of sediments
+
+OPTION C:
+Melting of rocks
+
+OPTION D:
+Crystallization of minerals
+
+CORRECT ANSWER:
+B
+
+EXPLANATION:
+Sedimentary rocks commonly form when sediments are deposited, compacted and cemented over time.
+
+SUBJECT:
+Geology
+
+TOPIC:
+Rock Formation
+
+DIFFICULTY:
+Medium
+
+MARKS:
+1
+
+--------------------------------------------------
+
+END OF QUESTION BANK

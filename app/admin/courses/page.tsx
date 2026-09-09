@@ -24,7 +24,9 @@ import {
   getAdminCourses,
   getCourseCategories,
   toggleCoursePublish,
-  updateCourse,
+
+  toggleCourseLandingPage,
+updateCourse,
   uploadCourseImage,
   type Course,
   type CourseCategory,
@@ -454,6 +456,39 @@ console.log("COURSE SAVE - bannerImage:", form.bannerImage);
       setActionCourseId(null);
     }
   }
+  async function handleLandingPagePublish(course: Course) {
+    const nextValue = !course.isLandingPagePublished;
+
+    try {
+      setActionCourseId(course.id);
+      setError("");
+      setNotice("");
+
+      const response = await toggleCourseLandingPage(
+        course.id,
+        nextValue,
+      );
+
+      setCourses((current) =>
+        current.map((item) =>
+          item.id === course.id
+            ? response.course
+            : item,
+        ),
+      );
+
+      setNotice(response.message);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to update landing-page status.",
+      );
+    } finally {
+      setActionCourseId(null);
+    }
+  }
+
 
   async function handleDelete(course: Course) {
     const confirmed = window.confirm(
@@ -739,6 +774,20 @@ console.log("COURSE SAVE - bannerImage:", form.bannerImage);
                             {course.isPublished
                               ? "Published"
                               : "Draft"}
+
+                            {course.educatorCourse && (
+                              <span
+                                className={`rounded-full px-3 py-1 text-[10px] font-black ${
+                                  course.isLandingPagePublished
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "bg-orange-50 text-orange-700"
+                                }`}
+                              >
+                                {course.isLandingPagePublished
+                                  ? "Landing Page"
+                                  : "Batch Only"}
+                              </span>
+                            )}
                           </span>
                         </div>
 
@@ -810,7 +859,34 @@ console.log("COURSE SAVE - bannerImage:", form.bannerImage);
                             : "Publish"}
                         </button>
 
-                        <button
+                                                {course.educatorCourse && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleLandingPagePublish(course)
+                            }
+                            disabled={
+                              actionLoading ||
+                              !course.isPublished
+                            }
+                            className={`inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                              course.isLandingPagePublished
+                                ? "border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                : "border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                            }`}
+                          >
+                            {actionLoading ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Eye className="h-3.5 w-3.5" />
+                            )}
+
+                            {course.isLandingPagePublished
+                              ? "Remove Landing"
+                              : "Publish Landing"}
+                          </button>
+                        )}
+<button
                           type="button"
                           onClick={() =>
                             handleDelete(course)
@@ -1045,7 +1121,7 @@ console.log("COURSE SAVE - bannerImage:", form.bannerImage);
                         </label>
 
                         <p className="text-[10px] font-semibold leading-5 text-slate-400">
-                          JPG, PNG or WEBP · Maximum 5 MB.
+                          JPG, PNG or WEBP ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Maximum 5 MB.
                         </p>
 
                         {form.bannerImage && (

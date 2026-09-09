@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import {
@@ -17,14 +17,17 @@ import {
   UserRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-
-import StudentPortalShell from "@/components/student-portal/StudentPortalShell";
 import { useAuth } from "@/context/AuthContext";
+import { getMyCourses, type GetMyCoursesResponse } from "@/lib/api";
 
 export default function DashboardPage() {
   const { user, isAuthenticated } = useAuth();
 
   const [authReady, setAuthReady] = useState(false);
+  const [learningData, setLearningData] =
+    useState<GetMyCoursesResponse | null>(null);
+  const [learningLoading, setLearningLoading] = useState(true);
+  const [learningError, setLearningError] = useState("");
 
   useEffect(() => {
     setAuthReady(true);
@@ -44,6 +47,44 @@ export default function DashboardPage() {
       window.location.href = "/admin";
     }
   }, [authReady, isAuthenticated, user]);
+  useEffect(() => {
+    if (!authReady || !isAuthenticated || !user || user.role !== "student") {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadLearningData = async () => {
+      setLearningLoading(true);
+      setLearningError("");
+
+      try {
+        const response = await getMyCourses();
+
+        if (!cancelled) {
+          setLearningData(response);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setLearningError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load your learning data.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLearningLoading(false);
+        }
+      }
+    };
+
+    void loadLearningData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, isAuthenticated, user]);
 
   if (!authReady) {
     return <DashboardLoading />;
@@ -57,7 +98,7 @@ export default function DashboardPage() {
     user.name?.trim().split(/\s+/)[0] || "Student";
 
   return (
-    <StudentPortalShell>
+
       <main className="student-dashboard min-h-screen overflow-x-hidden bg-[#f6f8fc]">
         {/* =====================================================
             BACKGROUND
@@ -271,7 +312,7 @@ export default function DashboardPage() {
               <MetricCard
                 icon={<Target className="h-5 w-5" />}
                 label="Average Score"
-                value="—"
+                value="â€”"
                 description="Your performance"
                 tone="green"
               />
@@ -362,8 +403,8 @@ export default function DashboardPage() {
 
                   <div className="mt-7 grid grid-cols-3 gap-3">
                     <MiniMetric label="Tests" value="0" />
-                    <MiniMetric label="Accuracy" value="—" />
-                    <MiniMetric label="Best Score" value="—" />
+                    <MiniMetric label="Accuracy" value="â€”" />
+                    <MiniMetric label="Best Score" value="â€”" />
                   </div>
 
                   <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4">
@@ -528,7 +569,7 @@ export default function DashboardPage() {
           </section>
         </div>
       </main>
-    </StudentPortalShell>
+
   );
 }
 

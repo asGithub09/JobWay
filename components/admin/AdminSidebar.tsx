@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -6,19 +6,23 @@ import {
   BarChart3,
   BookOpen,
   BriefcaseBusiness,
+  ClipboardCheck,
+  CreditCard,
+  Factory,
+  FolderTree,
   LayoutDashboard,
   Megaphone,
+  Settings,
   Users,
   UserRound,
   GraduationCap,
-  ClipboardCheck,
-  CreditCard,
-  Settings,
+  Layers3,
+  Image,
+  Bell,
+  PanelTop,
+  Library,
+  FileText,
   X,
-  UserCog,
-  Factory,
-  FolderTree,
-    Layers3,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -43,21 +47,16 @@ const navigation = [
       },
     ],
   },
+
   {
-    label: "Management",
+    label: "Core Management",
     items: [
       {
-        label: "Users",
-        href: "/admin/users",
+        label: "Students",
+        href: "/admin/students",
         icon: Users,
-        comingSoon: true,
       },
       {
-  label: "Students",
-  href: "/admin/students",
-  icon: Users,
-},
-            {
         label: "Leads",
         href: "/admin/leads",
         icon: UserRound,
@@ -82,13 +81,13 @@ const navigation = [
       {
         label: "Faculty",
         href: "/admin/faculty",
-        icon: UserCog,
-        comingSoon: true,
-      },
+        icon: Users,
+        },
     ],
   },
+
   {
-    label: "Content",
+    label: "Learning & Assessment",
     items: [
       {
         label: "Courses",
@@ -110,6 +109,12 @@ const navigation = [
         href: "/admin/exams",
         icon: ClipboardCheck,
       },
+    ],
+  },
+
+  {
+    label: "Platform",
+    items: [
       {
         label: "Jobs",
         href: "/admin/jobs",
@@ -118,17 +123,49 @@ const navigation = [
       },
     ],
   },
+
   {
-    label: "Marketing",
+    label: "Website Management",
     items: [
+      {
+        label: "Banners",
+        href: "/admin/banners",
+        icon: Image,
+        comingSoon: true,
+      },
+      {
+        label: "Notices",
+        href: "/admin/notices",
+        icon: Bell,
+        comingSoon: true,
+      },
+      {
+        label: "Advertisements",
+        href: "/admin/advertisements",
+        icon: PanelTop,
+        comingSoon: true,
+      },
       {
         label: "Campaigns",
         href: "/admin/campaigns",
         icon: Megaphone,
         comingSoon: true,
       },
+      {
+        label: "Media Library",
+        href: "/admin/media",
+        icon: Library,
+        comingSoon: true,
+      },
+      {
+        label: "Website Content",
+        href: "/admin/website-content",
+        icon: FileText,
+        comingSoon: true,
+      },
     ],
   },
+
   {
     label: "System",
     items: [
@@ -150,6 +187,8 @@ export function AdminSidebar({
 
   const content = (
     <div className="flex h-full flex-col">
+
+      {/* BRAND */}
       <div className="flex h-20 items-center justify-between border-b border-slate-200/80 px-5">
         <Link
           href="/admin"
@@ -184,7 +223,15 @@ export function AdminSidebar({
                 JobWay
               </div>
 
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+              <div
+                className="
+                  text-[10px]
+                  font-bold
+                  uppercase
+                  tracking-[0.18em]
+                  text-slate-400
+                "
+              >
                 Admin Workspace
               </div>
             </div>
@@ -209,13 +256,24 @@ export function AdminSidebar({
         )}
       </div>
 
+      {/* NAVIGATION */}
       <nav className="flex-1 overflow-y-auto px-3 py-5">
         {navigation.map((section) => (
           <div
             key={section.label}
             className="mb-6"
           >
-            <div className="mb-2 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+            <div
+              className="
+                mb-2
+                px-3
+                text-[10px]
+                font-black
+                uppercase
+                tracking-[0.18em]
+                text-slate-400
+              "
+            >
               {section.label}
             </div>
 
@@ -227,11 +285,10 @@ export function AdminSidebar({
                   pathname === item.href ||
                   (
                     item.href !== "/admin" &&
-                    pathname.startsWith(
-                      `${item.href}/`,
-                    )
+                    pathname.startsWith(`${item.href}/`)
                   );
 
+                {/* COMING SOON */}
                 if (item.comingSoon) {
                   return (
                     <div
@@ -257,13 +314,26 @@ export function AdminSidebar({
                         {item.label}
                       </span>
 
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-400">
+                      <span
+                        className="
+                          rounded-full
+                          bg-slate-100
+                          px-2
+                          py-0.5
+                          text-[9px]
+                          font-bold
+                          uppercase
+                          tracking-wide
+                          text-slate-400
+                        "
+                      >
                         Soon
                       </span>
                     </div>
                   );
                 }
 
+                {/* ACTIVE / LIVE */}
                 return (
                   <Link
                     key={item.href}
@@ -310,6 +380,7 @@ export function AdminSidebar({
         ))}
       </nav>
 
+      {/* SYSTEM STATUS */}
       <div className="border-t border-slate-200/80 p-4">
         <div
           className="
@@ -342,6 +413,7 @@ export function AdminSidebar({
 
   return (
     <>
+      {/* DESKTOP */}
       <aside
         className="
           fixed
@@ -360,6 +432,7 @@ export function AdminSidebar({
         {content}
       </aside>
 
+      {/* MOBILE OVERLAY */}
       {mobileOpen && (
         <>
           <div

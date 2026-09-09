@@ -172,11 +172,16 @@ export function AuthModal({
       /*
        * Role-based routing:
        *
-       * Admin  → Admin Dashboard
-       * Student → JobWay Homepage
+       * Admin  â†’ Admin Dashboard
+       * Student â†’ JobWay Homepage
        */
       if (response.user.role === "admin") {
         window.location.href = "/admin";
+        return;
+      }
+
+      if (response.user.role === "educator") {
+        window.location.href = "/educator";
         return;
       }
 

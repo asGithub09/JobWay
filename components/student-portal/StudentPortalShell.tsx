@@ -12,7 +12,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   LogOut,
-  Menu,
+    Menu,
   Settings,
   ShoppingBag,
   Target,
@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-
+import { DashboardNavbar } from "@/components/layout/DashboardNavbar";
 import { useAuth } from "@/context/AuthContext";
 
 type DashboardSidebarItem =
@@ -31,6 +31,7 @@ type DashboardSidebarItem =
   | "test-series"
   | "mock-tests"
   | "attempts"
+  | "results"
   | "resources"
   | "performance"
   | "achievements"
@@ -67,6 +68,10 @@ function getActiveItem(
 
   if (pathname.startsWith("/dashboard/attempts")) {
     return "attempts";
+  }
+
+  if (pathname.startsWith("/dashboard/results")) {
+    return "results";
   }
 
   if (pathname.startsWith("/dashboard/performance")) {
@@ -346,6 +351,18 @@ function DashboardSidebar({
 
         <SidebarItem
           icon={
+            <BarChart3
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+            />
+          }
+          label="My Results"
+          href="/dashboard/results"
+          active={activeItem === "results"}
+          onClick={onNavigate}
+        />
+        <SidebarItem
+          icon={
             <FileText
               className="h-[18px] w-[18px]"
               aria-hidden="true"
@@ -540,7 +557,7 @@ export default function StudentPortalShell({
    * Admin users use the separate admin portal and should
    * never receive the student sidebar.
    */
-  if (user.role === "admin") {
+  if (user.role !== "student") {
     return <>{children}</>;
   }
 
@@ -559,6 +576,12 @@ export default function StudentPortalShell({
 
   return (
     <div className="min-h-screen bg-slate-50">
+       <DashboardNavbar
+        role="student"
+        onMenuClick={() =>
+          setMobileSidebarOpen((current) => !current)
+        }
+      />
       {/* =====================================================
           MOBILE TOP BAR
          ===================================================== */}
@@ -649,8 +672,7 @@ export default function StudentPortalShell({
           DESKTOP SIDEBAR
          ===================================================== */}
 
-      <aside className="fixed bottom-0 left-0 top-0 z-30 hidden w-[260px] border-r border-slate-200 bg-white lg:flex">
-        <DashboardSidebar
+<aside className="fixed bottom-0 left-0 top-[72px] z-30 hidden w-[260px] border-r border-slate-200 bg-white lg:flex">        <DashboardSidebar
           activeItem={activeItem}
           onNavigate={() => undefined}
           onLogout={handleLogout}

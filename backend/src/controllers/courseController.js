@@ -18,6 +18,10 @@ function sanitizeCourse(course) {
     syllabus: course.syllabus,
     isFeatured: course.isFeatured,
     isPublished: course.isPublished,
+    isLandingPagePublished: course.isLandingPagePublished,
+    educatorCourse: course.educatorCourse
+      ? course.educatorCourse.toString()
+      : null,
     interestedCount: course.interestedCount,
     enrolledCount: course.enrolledCount,
     createdAt: course.createdAt,
@@ -41,8 +45,13 @@ function createSlug(value) {
 async function getPublishedCourses(req, res) {
   try {
     const courses = await Course.find({
-      isPublished: true,
-    }).sort({
+        isPublished: true,
+        $or: [
+          { educatorCourse: null },
+          { educatorCourse: { $exists: false } },
+          { isLandingPagePublished: true },
+        ],
+      }).sort({
       isFeatured: -1,
       createdAt: -1,
     });
@@ -70,9 +79,14 @@ async function getPublishedCourse(req, res) {
     const { slug } = req.params;
 
     const course = await Course.findOne({
-      slug: slug.toLowerCase(),
-      isPublished: true,
-    });
+        slug: slug.toLowerCase(),
+        isPublished: true,
+        $or: [
+          { educatorCourse: null },
+          { educatorCourse: { $exists: false } },
+          { isLandingPagePublished: true },
+        ],
+      });
 
     if (!course) {
       return res.status(404).json({
@@ -534,8 +548,59 @@ async function toggleCoursePublish(req, res) {
 
 /*
  * ADMIN
- * Delete a course.
+ * Approve or remove a course from the public landing page.
+ *
+ * This does NOT change batch learning access.
  */
+async function toggleCourseLandingPage(req, res) {
+  try {
+    const { id } = req.params;
+    const { published } = req.body;
+
+    const course = await Course.findById(id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+
+    const nextValue = Boolean(published);
+
+    if (nextValue && !course.isPublished) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Course must be published before it can be approved for the landing page",
+      });
+    }
+
+    course.isLandingPagePublished = nextValue;
+
+    await course.save();
+
+    return res.status(200).json({
+      success: true,
+      message: nextValue
+        ? "Course approved for the landing page"
+        : "Course removed from the landing page",
+      course: sanitizeCourse(course),
+    });
+  } catch (error) {
+    console.error(
+      "Toggle course landing-page publication error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Unable to update landing-page publication status",
+    });
+  }
+}
+
 async function deleteCourse(req, res) {
   try {
     const { id } = req.params;
@@ -573,4 +638,5 @@ module.exports = {
   updateCourse,
   toggleCoursePublish,
   deleteCourse,
+    toggleCourseLandingPage,
 };

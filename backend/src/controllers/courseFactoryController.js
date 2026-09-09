@@ -739,6 +739,50 @@ async function publishCourseDraft(req, res) {
     });
   }
 }
+async function deleteCourseDraft(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Draft ID is required.",
+      });
+    }
+
+    const draft = await CourseDraft.findById(id);
+
+    if (!draft) {
+      return res.status(404).json({
+        success: false,
+        message: "Course draft not found.",
+      });
+    }
+
+    // Published drafts are protected.
+    if (draft.status === "PUBLISHED") {
+      return res.status(400).json({
+        success: false,
+        message: "Published drafts cannot be deleted.",
+      });
+    }
+
+    await CourseDraft.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Course draft deleted successfully.",
+      draftId: id,
+    });
+  } catch (error) {
+    console.error("Delete course draft error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete course draft.",
+    });
+  }
+}
 module.exports = {
   buildCourseDraft,
   getCourseDraft,
@@ -746,4 +790,45 @@ module.exports = {
   updateCourseDraft,
   approveCourseDraft,
   publishCourseDraft,
+  deleteCourseDraft,
 };
+/**
+ * Delete an Admin Course Factory draft.
+ *
+ * Published courses/drafts are protected.
+ * This endpoint belongs only to the legacy Admin
+ * Course Factory workflow.
+ */
+async function deleteCourseDraft(req, res) {
+  try {
+    const draft = await CourseDraft.findById(req.params.id);
+
+    if (!draft) {
+      return res.status(404).json({
+        success: false,
+        message: "Course draft not found.",
+      });
+    }
+
+    if (draft.status === "PUBLISHED") {
+      return res.status(409).json({
+        success: false,
+        message: "Published course drafts cannot be deleted.",
+      });
+    }
+
+    await CourseDraft.findByIdAndDelete(draft._id);
+
+    return res.json({
+      success: true,
+      message: "Course draft deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Delete course draft error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete course draft.",
+    });
+  }
+}

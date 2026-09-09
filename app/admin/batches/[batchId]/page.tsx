@@ -29,17 +29,23 @@ import {
 
 import {
   addCoursesToBatch,
+  addEducatorsToBatch,
   addStudentsToBatch,
   getBatch,
   getBatchCourses,
+  getBatchEducators,
   getBatchStudents,
   removeCourseFromBatch,
+  removeEducatorFromBatch,
   removeStudentFromBatch,
   searchBatchCourses,
+  searchBatchEducators,
   searchBatchStudents,
   type Batch,
   type BatchCourse,
   type BatchCourseSearchResult,
+  type BatchEducator,
+  type BatchEducatorSearchResult,
   type BatchStudent,
   type BatchStudentSearchResult,
 } from "@/lib/api";
@@ -93,7 +99,7 @@ function statusLabel(
    PAGE
    ============================================================ */
 
-export default function BatchStudentsPage() {
+export default function BatchDetailPage() {
   const params = useParams<{
     batchId: string;
   }>();
@@ -171,6 +177,38 @@ export default function BatchStudentsPage() {
 
   const [removingCourseId, setRemovingCourseId] =
     useState<string | null>(null);
+
+  /* ----------------------------------------------------------
+     EDUCATORS
+     ---------------------------------------------------------- */
+
+  const [educators, setEducators] =
+    useState<BatchEducator[]>([]);
+
+  const [showAddEducatorModal, setShowAddEducatorModal] =
+    useState(false);
+
+  const [availableEducators, setAvailableEducators] =
+    useState<BatchEducatorSearchResult[]>([]);
+
+  const [educatorSearch, setEducatorSearch] =
+    useState("");
+
+  const [selectedEducators, setSelectedEducators] =
+    useState<string[]>([]);
+
+  const [loadingEducators, setLoadingEducators] =
+    useState(false);
+
+  const [loadingAvailableEducators, setLoadingAvailableEducators] =
+    useState(false);
+
+  const [addingEducators, setAddingEducators] =
+    useState(false);
+
+  const [removingEducatorId, setRemovingEducatorId] =
+    useState<string | null>(null);
+
   /* ----------------------------------------------------------
      LOAD BATCH
      ---------------------------------------------------------- */
@@ -254,6 +292,42 @@ export default function BatchStudentsPage() {
       },
       [batchId],
     );
+
+  /* ----------------------------------------------------------
+     LOAD ASSIGNED EDUCATORS
+     ---------------------------------------------------------- */
+
+  const loadEducators =
+    useCallback(
+      async () => {
+        if (!batchId) {
+          return;
+        }
+
+        setLoadingEducators(true);
+
+        try {
+          const response =
+            await getBatchEducators(
+              batchId,
+            );
+
+          setEducators(
+            response.educators || [],
+          );
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load educators.",
+          );
+        } finally {
+          setLoadingEducators(false);
+        }
+      },
+      [batchId],
+    );
+
   /* ----------------------------------------------------------
      INITIAL LOAD
      ---------------------------------------------------------- */
@@ -270,6 +344,7 @@ export default function BatchStudentsPage() {
   batchResponse,
   studentResponse,
   courseResponse,
+  educatorResponse,
 ] = await Promise.all([
   getBatch(batchId),
   getBatchStudents(
@@ -277,6 +352,7 @@ export default function BatchStudentsPage() {
     search,
   ),
   getBatchCourses(batchId),
+  getBatchEducators(batchId),
 ]);
 
         if (cancelled) {
@@ -295,6 +371,11 @@ export default function BatchStudentsPage() {
   courseResponse.courses ||
     [],
 );
+
+        setEducators(
+          educatorResponse.educators ||
+            [],
+        );
       } catch (err) {
         if (cancelled) {
           return;
@@ -897,6 +978,251 @@ export default function BatchStudentsPage() {
     }
   }
   /* ----------------------------------------------------------
+     LOAD AVAILABLE EDUCATORS
+     ---------------------------------------------------------- */
+
+  const loadAvailableEducators =
+    useCallback(
+      async (
+        query: string,
+      ) => {
+        if (!batchId) {
+          return;
+        }
+
+        setLoadingAvailableEducators(true);
+
+        try {
+          const response =
+            await searchBatchEducators(
+              batchId,
+              query,
+            );
+
+          setAvailableEducators(
+            response.educators || [],
+          );
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to search educators.",
+          );
+        } finally {
+          setLoadingAvailableEducators(false);
+        }
+      },
+      [batchId],
+    );
+
+  /* ----------------------------------------------------------
+     SEARCH AVAILABLE EDUCATORS
+     ---------------------------------------------------------- */
+
+  useEffect(() => {
+    if (!showAddEducatorModal) {
+      return;
+    }
+
+    const timer =
+      window.setTimeout(
+        () => {
+          void loadAvailableEducators(
+            educatorSearch,
+          );
+        },
+        300,
+      );
+
+    return () =>
+      window.clearTimeout(
+        timer,
+      );
+  }, [
+    showAddEducatorModal,
+    educatorSearch,
+    loadAvailableEducators,
+  ]);
+
+  /* ----------------------------------------------------------
+     OPEN / CLOSE EDUCATOR MODAL
+     ---------------------------------------------------------- */
+
+  async function openAddEducatorModal() {
+    setError("");
+    setSuccess("");
+    setEducatorSearch("");
+    setSelectedEducators([]);
+    setAvailableEducators([]);
+    setShowAddEducatorModal(true);
+
+    await loadAvailableEducators("");
+  }
+
+  function closeAddEducatorModal() {
+    if (addingEducators) {
+      return;
+    }
+
+    setShowAddEducatorModal(false);
+    setEducatorSearch("");
+    setSelectedEducators([]);
+    setAvailableEducators([]);
+  }
+
+  /* ----------------------------------------------------------
+     SELECT / DESELECT EDUCATORS
+     ---------------------------------------------------------- */
+
+  function toggleEducator(
+    educatorId: string,
+  ) {
+    setSelectedEducators(
+      (current) => {
+        if (
+          current.includes(
+            educatorId,
+          )
+        ) {
+          return current.filter(
+            (id) =>
+              id !== educatorId,
+          );
+        }
+
+        return [
+          ...current,
+          educatorId,
+        ];
+      },
+    );
+  }
+
+  function selectAllVisibleEducators() {
+    const visibleIds =
+      availableEducators.map(
+        (educator) =>
+          educator._id,
+      );
+
+    setSelectedEducators(
+      (current) => [
+        ...new Set([
+          ...current,
+          ...visibleIds,
+        ]),
+      ],
+    );
+  }
+
+  function clearEducatorSelection() {
+    setSelectedEducators([]);
+  }
+
+  /* ----------------------------------------------------------
+     ADD EDUCATORS
+     ---------------------------------------------------------- */
+
+  async function handleAddEducators(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (
+      selectedEducators.length ===
+      0
+    ) {
+      setError(
+        "Please select at least one educator.",
+      );
+      return;
+    }
+
+    setAddingEducators(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response =
+        await addEducatorsToBatch(
+          batchId,
+          selectedEducators,
+        );
+
+      setSuccess(
+        response.message ||
+          "Educators added successfully.",
+      );
+
+      setShowAddEducatorModal(false);
+      setSelectedEducators([]);
+      setAvailableEducators([]);
+
+      await loadEducators();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to add educators.",
+      );
+    } finally {
+      setAddingEducators(false);
+    }
+  }
+
+  /* ----------------------------------------------------------
+     REMOVE EDUCATOR
+     ---------------------------------------------------------- */
+
+  async function handleRemoveEducator(
+    membership: BatchEducator,
+  ) {
+    const educator =
+      membership.educator;
+
+    const confirmed =
+      window.confirm(
+        `Remove ${educator.name} from "${batch?.name}"?`,
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRemovingEducatorId(
+      membership.assignmentId,
+    );
+
+    setError("");
+    setSuccess("");
+
+    try {
+      const response =
+        await removeEducatorFromBatch(
+          batchId,
+          educator._id,
+        );
+
+      setSuccess(
+        response.message ||
+          "Educator removed successfully.",
+      );
+
+      await loadEducators();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to remove educator.",
+      );
+    } finally {
+      setRemovingEducatorId(
+        null,
+      );
+    }
+  }
+
+  /* ----------------------------------------------------------
      DERIVED DATA
      ---------------------------------------------------------- */
 
@@ -909,6 +1235,13 @@ export default function BatchStudentsPage() {
 
   const activeCourseCount =
     courses.filter(
+      (membership) =>
+        membership.status ===
+        "active",
+    ).length;
+
+  const activeEducatorCount =
+    educators.filter(
       (membership) =>
         membership.status ===
         "active",
@@ -941,6 +1274,21 @@ export default function BatchStudentsPage() {
       [
         availableStudents,
         selectedStudents,
+      ],
+    );
+
+  const selectedVisibleEducatorCount =
+    useMemo(
+      () =>
+        availableEducators.filter(
+          (educator) =>
+            selectedEducators.includes(
+              educator._id,
+            ),
+        ).length,
+      [
+        availableEducators,
+        selectedEducators,
       ],
     );
 
@@ -1104,7 +1452,7 @@ export default function BatchStudentsPage() {
             BATCH STATS
             ==================================================== */}
 
-        <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
 
           <InfoCard
             label="Students"
@@ -1120,6 +1468,14 @@ export default function BatchStudentsPage() {
               activeCourseCount,
             )}
             icon={BookOpen}
+          />
+
+          <InfoCard
+            label="Educators"
+            value={String(
+              activeEducatorCount,
+            )}
+            icon={Users}
           />
 
           <InfoCard
@@ -1392,6 +1748,239 @@ export default function BatchStudentsPage() {
 
         </section>
 
+
+        {/* ====================================================
+            EDUCATOR DIRECTORY
+            ==================================================== */}
+
+        <section className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+
+          <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+
+            <div className="flex items-center gap-3">
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                <Users className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h2 className="text-lg font-black text-slate-950">
+                  Educators
+                </h2>
+
+                <p className="mt-1 text-xs font-medium text-slate-400">
+                  {activeEducatorCount} active{" "}
+                  {activeEducatorCount === 1
+                    ? "educator"
+                    : "educators"}{" "}
+                  assigned to this batch.
+                </p>
+              </div>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                void openAddEducatorModal()
+              }
+              disabled={
+                batch.status ===
+                "archived"
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add Educators
+            </button>
+
+          </div>
+
+          {loadingEducators ? (
+
+            <div className="flex min-h-[280px] items-center justify-center">
+              <div className="text-center">
+                <Loader2 className="mx-auto h-8 w-8 animate-spin text-violet-600" />
+                <p className="mt-3 text-sm font-bold text-slate-500">
+                  Loading educators...
+                </p>
+              </div>
+            </div>
+
+          ) : educators.length === 0 ? (
+
+            <div className="flex min-h-[320px] flex-col items-center justify-center px-6 text-center">
+
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                <Users className="h-7 w-7" />
+              </div>
+
+              <h3 className="mt-5 text-lg font-black text-slate-950">
+                No educators assigned
+              </h3>
+
+              <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+                Assign educators to this batch so they can manage the learning content and courses for their assigned learners.
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  void openAddEducatorModal()
+                }
+                disabled={
+                  batch.status ===
+                  "archived"
+                }
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+                Add First Educators
+              </button>
+
+            </div>
+
+          ) : (
+
+            <div className="overflow-x-auto">
+
+              <table className="min-w-[900px] w-full">
+
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/80">
+                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                      Educator
+                    </th>
+
+                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                      Contact
+                    </th>
+
+                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                      Assigned
+                    </th>
+
+                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                      Status
+                    </th>
+
+                    <th className="px-5 py-3 text-right text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {educators.map(
+                    (
+                      membership,
+                    ) => {
+                      const educator =
+                        membership.educator;
+
+                      return (
+                        <tr
+                          key={
+                            membership.assignmentId
+                          }
+                          className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"
+                        >
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-black text-violet-700">
+                                {educator.name
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="font-black text-slate-900">
+                                  {educator.name}
+                                </div>
+
+                                <div className="mt-0.5 text-xs text-slate-400">
+                                  {educator.isEmailVerified
+                                    ? "Verified educator"
+                                    : "Email not verified"}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-5 py-4">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                                <Mail className="h-3.5 w-3.5 text-slate-400" />
+                                {educator.email}
+                              </div>
+
+                              {educator.phone && (
+                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                                  <Phone className="h-3.5 w-3.5 text-slate-400" />
+                                  {educator.phone}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="px-5 py-4 text-xs font-semibold text-slate-600">
+                            {formatDate(
+                              membership.assignedAt,
+                            )}
+                          </td>
+
+                          <td className="px-5 py-4">
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-black ${
+                                membership.status ===
+                                "active"
+                                  ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                                  : "border-slate-200 bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {membership.status ===
+                              "active"
+                                ? "Active"
+                                : "Inactive"}
+                            </span>
+                          </td>
+
+                          <td className="px-5 py-4 text-right">
+                            <button
+                              type="button"
+                              disabled={
+                                removingEducatorId ===
+                                membership.assignmentId
+                              }
+                              onClick={() =>
+                                void handleRemoveEducator(
+                                  membership,
+                                )
+                              }
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {removingEducatorId ===
+                              membership.assignmentId ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" />
+                              )}
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    },
+                  )}
+                </tbody>
+
+              </table>
+
+            </div>
+
+          )}
+
+        </section>
 
         {/* ====================================================
             COURSE DIRECTORY
@@ -2353,6 +2942,324 @@ export default function BatchStudentsPage() {
         </div>
       )}
 
+      {/* ======================================================
+          ADD EDUCATORS MODAL
+          ====================================================== */}
+
+      {showAddEducatorModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-sm">
+
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                  <UserPlus className="h-5 w-5" />
+                </div>
+
+                <div>
+                  <h2 className="text-xl font-black text-slate-950">
+                    Add Educators
+                  </h2>
+
+                  <p className="mt-1 text-xs font-medium text-slate-400">
+                    Select educators to assign to{" "}
+                    <span className="font-bold text-slate-600">
+                      {batch.name}
+                    </span>
+                  </p>
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  closeAddEducatorModal
+                }
+                disabled={
+                  addingEducators
+                }
+                className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+            </div>
+
+            <form
+              onSubmit={
+                handleAddEducators
+              }
+              className="flex min-h-0 flex-1 flex-col"
+            >
+
+              <div className="border-b border-slate-100 p-5">
+
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                  <input
+                    autoFocus
+                    value={
+                      educatorSearch
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setEducatorSearch(
+                        event.target
+                          .value,
+                      )
+                    }
+                    placeholder="Search by name, email or phone..."
+                    className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-50"
+                  />
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+
+                  <p className="text-xs font-bold text-slate-400">
+                    {availableEducators.length}{" "}
+                    available
+                  </p>
+
+                  <div className="flex gap-2">
+
+                    <button
+                      type="button"
+                      onClick={
+                        selectAllVisibleEducators
+                      }
+                      disabled={
+                        availableEducators.length ===
+                        0
+                      }
+                      className="rounded-lg px-3 py-1.5 text-xs font-bold text-violet-600 transition hover:bg-violet-50 disabled:opacity-40"
+                    >
+                      Select visible
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={
+                        clearEducatorSelection
+                      }
+                      disabled={
+                        selectedEducators.length ===
+                        0
+                      }
+                      className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500 transition hover:bg-slate-100 disabled:opacity-40"
+                    >
+                      Clear
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto">
+
+                {loadingAvailableEducators ? (
+
+                  <div className="flex min-h-[280px] items-center justify-center">
+                    <div className="text-center">
+                      <Loader2 className="mx-auto h-7 w-7 animate-spin text-violet-600" />
+                      <p className="mt-3 text-sm font-bold text-slate-500">
+                        Finding educators...
+                      </p>
+                    </div>
+                  </div>
+
+                ) : availableEducators.length ===
+                  0 ? (
+
+                  <div className="flex min-h-[280px] flex-col items-center justify-center px-6 text-center">
+
+                    <Users className="h-9 w-9 text-slate-300" />
+
+                    <h3 className="mt-4 text-base font-black text-slate-800">
+                      No educators available
+                    </h3>
+
+                    <p className="mt-1 max-w-sm text-xs leading-5 text-slate-400">
+                      Try another search. Active educators already assigned to this batch are excluded.
+                    </p>
+
+                  </div>
+
+                ) : (
+
+                  <div className="divide-y divide-slate-100">
+
+                    {availableEducators.map(
+                      (
+                        educator,
+                      ) => {
+                        const selected =
+                          selectedEducators.includes(
+                            educator._id,
+                          );
+
+                        return (
+                          <button
+                            key={
+                              educator._id
+                            }
+                            type="button"
+                            onClick={() =>
+                              toggleEducator(
+                                educator._id,
+                              )
+                            }
+                            className={`flex w-full items-center gap-4 px-5 py-4 text-left transition ${
+                              selected
+                                ? "bg-violet-50/70"
+                                : "hover:bg-slate-50"
+                            }`}
+                          >
+
+                            <div
+                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition ${
+                                selected
+                                  ? "border-violet-600 bg-violet-600 text-white"
+                                  : "border-slate-300 bg-white"
+                              }`}
+                            >
+                              {selected && (
+                                <Check className="h-3.5 w-3.5" />
+                              )}
+                            </div>
+
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-black text-violet-700">
+                              {educator.name
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+
+                              <div className="font-black text-slate-900">
+                                {educator.name}
+                              </div>
+
+                              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-slate-400">
+                                <span>
+                                  {educator.email}
+                                </span>
+
+                                {educator.phone && (
+                                  <span>
+                                    {educator.phone}
+                                  </span>
+                                )}
+                              </div>
+
+                            </div>
+
+                            <span className="shrink-0 rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-700">
+                              Educator
+                            </span>
+
+                          </button>
+                        );
+                      },
+                    )}
+
+                  </div>
+
+                )}
+
+              </div>
+
+              <div className="border-t border-slate-100 bg-slate-50/80 px-5 py-4">
+
+                <div className="mb-3 flex items-center justify-between text-xs">
+
+                  <span className="font-bold text-slate-500">
+                    Selected
+                  </span>
+
+                  <span className="font-black text-violet-700">
+                    {selectedEducators.length}
+                  </span>
+
+                </div>
+
+                {selectedVisibleEducatorCount <
+                    selectedEducators.length &&
+                  selectedEducators.length >
+                    0 && (
+                    <p className="mb-3 text-[11px] font-semibold text-slate-400">
+                      {selectedEducators.length -
+                        selectedVisibleEducatorCount}{" "}
+                      selected educator
+                      {selectedEducators.length -
+                        selectedVisibleEducatorCount ===
+                      1
+                        ? ""
+                        : "s"}{" "}
+                      hidden by the current search.
+                    </p>
+                  )}
+
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+
+                  <button
+                    type="button"
+                    onClick={
+                      closeAddEducatorModal
+                    }
+                    disabled={
+                      addingEducators
+                    }
+                    className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={
+                      addingEducators ||
+                      selectedEducators.length ===
+                        0
+                    }
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {addingEducators ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="h-4 w-4" />
+                    )}
+
+                    {addingEducators
+                      ? "Adding..."
+                      : `Add ${
+                          selectedEducators.length
+                        } Educator${
+                          selectedEducators.length ===
+                          1
+                            ? ""
+                            : "s"
+                        }`}
+                  </button>
+
+                </div>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+      )}
+
           </div>
     </main>
   );
@@ -2397,5 +3304,3 @@ function InfoCard({
     </div>
   );
 }
-
-

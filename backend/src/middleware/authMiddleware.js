@@ -85,16 +85,6 @@ function optionalAuthenticateToken(req, res, next) {
 
       req.user = decoded;
     } catch (error) {
-      /*
-       * This is intentionally not returned as a 401.
-       *
-       * These routes remain public because FREE exams,
-       * test series, and mock tests must continue to work
-       * without authentication.
-       *
-       * The protected controller logic will reject PREMIUM
-       * content when req.user is not a valid student.
-       */
       console.error(
         "Optional authentication error:",
         error.message,
@@ -130,8 +120,27 @@ function authorizeAdmin(req, res, next) {
   next();
 }
 
+function authorizeEducator(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required",
+    });
+  }
+
+  if (req.user.role !== "educator") {
+    return res.status(403).json({
+      success: false,
+      message: "Educator access required",
+    });
+  }
+
+  next();
+}
+
 module.exports = {
   authenticateToken,
   optionalAuthenticateToken,
   authorizeAdmin,
+  authorizeEducator,
 };

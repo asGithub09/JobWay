@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ChevronDown,
   Download,
@@ -34,6 +35,8 @@ export function SiteHeader({
   activeCategory,
   variant = "default",
 }: SiteHeaderProps) {
+  const pathname = usePathname();
+
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
 
@@ -249,60 +252,112 @@ export function SiteHeader({
   const firstName =
     user?.name?.trim().split(/\s+/)[0] ||
     "Student";
-const primaryItems: {
-  id: MegaMenuId;
-  label: string;
-  href: string;
-}[] =
-  variant === "test-series"
-    ? [
-        {
-          id: "government",
-          label: "Exams",
-          href: "/exams",
-        },
-        {
-          id: "college",
-          label: "Test Series",
-          href: "/test-series",
-        },
-        {
-          id: "private",
-          label: "Mock Tests",
-          href: "/mock-tests",
-        },
-        {
-          id: "upsc",
-          label: "Courses",
-          href: "/courses",
-        },
-      ]
-    : [
-        {
-          id: "government",
-          label: "Exams",
-          href: "/exams",
-        },
-        {
-          id: "college",
-          label: "Test Series",
-          href: "/test-series",
-        },
-        {
-          id: "private",
-          label: "Mock Tests",
-          href: "/mock-tests",
-        },
-        {
-          id: "upsc",
-          label: "Courses",
-          href: "/courses",
-        },
-      ];
+
+  const primaryItems: {
+    id: MegaMenuId;
+    label: string;
+    href: string;
+  }[] =
+    variant === "test-series"
+      ? [
+          {
+            id: "government",
+            label: "Exams",
+            href: "/exams",
+          },
+          {
+            id: "college",
+            label: "Test Series",
+            href: "/test-series",
+          },
+          {
+            id: "private",
+            label: "Mock Tests",
+            href: "/mock-tests",
+          },
+          {
+            id: "upsc",
+            label: "Courses",
+            href: "/courses",
+          },
+        ]
+      : [
+          {
+            id: "government",
+            label: "Exams",
+            href: "/exams",
+          },
+          {
+            id: "college",
+            label: "Test Series",
+            href: "/test-series",
+          },
+          {
+            id: "private",
+            label: "Mock Tests",
+            href: "/mock-tests",
+          },
+          {
+            id: "upsc",
+            label: "Courses",
+            href: "/courses",
+          },
+        ];
+
   const loggedIn =
     authReady &&
     isAuthenticated &&
     Boolean(user);
+
+
+  const dashboardHref =
+    String(user?.role ?? "").toLowerCase() === "educator"
+      ? "/educator"
+      : String(user?.role ?? "").toLowerCase() === "admin"
+        ? "/admin"
+        : "/dashboard";/*
+   * ============================================================
+   * STUDENT DASHBOARD HEADER DEDUPLICATION
+   * ============================================================
+   *
+   * StudentPortalShell already provides the persistent
+   * DashboardNavbar for authenticated student pages.
+   *
+   * Some student-facing routes also contain <SiteHeader />
+   * because those pages can be visited publicly.
+   *
+   * When an authenticated student visits those routes,
+   * suppress the public SiteHeader so only the dashboard
+   * navigation remains visible.
+   *
+   * Logged-out visitors continue to receive the normal
+   * public SiteHeader.
+   */
+
+  const isStudentDashboardArea =
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/") ||
+    pathname === "/courses" ||
+    pathname.startsWith("/courses/") ||
+    pathname === "/test-series" ||
+    pathname.startsWith("/test-series/") ||
+    pathname === "/exams" ||
+    pathname.startsWith("/exams/") ||
+    pathname === "/resources" ||
+    pathname.startsWith("/resources/");
+
+  const isStudentUser =
+    String(user?.role ?? "").toLowerCase() ===
+    "student";
+
+  const shouldHidePublicHeader =
+    loggedIn &&
+    isStudentUser &&
+    isStudentDashboardArea;
+
+  if (shouldHidePublicHeader) {
+    return null;
+  }
 
   return (
     <>
@@ -315,6 +370,7 @@ const primaryItems: {
         {/* =====================================================
             MAIN HEADER
            ===================================================== */}
+
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-[70px] items-center gap-3 lg:gap-4">
             {/* Mobile menu */}
@@ -469,6 +525,7 @@ const primaryItems: {
               {/* =================================================
                   DESKTOP AUTH / STUDENT ACCOUNT
                  ================================================= */}
+
               {loggedIn ? (
                 <div
                   ref={accountRef}
@@ -529,7 +586,7 @@ const primaryItems: {
 
                       <div className="py-1">
                         <Link
-                          href="/dashboard"
+                          href={dashboardHref}
                           role="menuitem"
                           onClick={() =>
                             setAccountOpen(
@@ -626,6 +683,7 @@ const primaryItems: {
             {/* =================================================
                 MOBILE AUTH / STUDENT ACCOUNT
                ================================================= */}
+
             {loggedIn ? (
               <button
                 type="button"
@@ -634,10 +692,11 @@ const primaryItems: {
                   setMobileMenuOpen(
                     false,
                   );
+
                   setSearchOpen(false);
 
                   window.location.href =
-                    "/dashboard";
+                    dashboardHref;
                 }}
                 className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#E13032] px-3 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:bg-[#C92426] hover:shadow-md focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2 sm:px-4 sm:text-sm lg:hidden"
               >
@@ -700,6 +759,7 @@ const primaryItems: {
         {/* =====================================================
             SECONDARY NAVIGATION + MEGA MENUS
            ===================================================== */}
+
         <DesktopNavigation
           activeCategory={
             activeCategory

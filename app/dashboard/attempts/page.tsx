@@ -17,8 +17,6 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-
-import StudentPortalShell from "@/components/student-portal/StudentPortalShell";
 import {
   getMyMockTestAttempts,
   type MockTestAttempt,
@@ -469,16 +467,16 @@ export default function MyAttemptsPage() {
 
   if (!isAuthenticated || user?.role === "admin") {
     return (
-      <StudentPortalShell>
+
         <div className="flex min-h-screen items-center justify-center bg-[#f6f8fc]">
           <Loader2 className="h-7 w-7 animate-spin text-[#E13032]" />
         </div>
-      </StudentPortalShell>
+
     );
   }
 
   return (
-    <StudentPortalShell>
+
       <main className="min-h-screen overflow-x-hidden bg-[#f6f8fc]">
         <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden">
           <div className="absolute left-[7%] top-[5%] h-[350px] w-[350px] rounded-full bg-red-200/20 blur-[100px]" />
@@ -750,6 +748,6 @@ export default function MyAttemptsPage() {
           </section>
         </div>
       </main>
-    </StudentPortalShell>
+
   );
 }
