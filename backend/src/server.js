@@ -34,6 +34,7 @@ const facultyRoutes = require("./routes/facultyRoutes");
 
 const educatorCourseRoutes = require("./routes/educatorCourseRoutes");
 const educatorCourseImportRoutes = require("./routes/educatorCourseImportRoutes");
+const educatorMockRoutes = require("./routes/educatorMockRoutes");
 
 const educatorExamRoutes = require("./routes/educatorExamRoutes");
 const educatorQuestionRoutes = require("./routes/educatorQuestionRoutes");
@@ -172,6 +173,11 @@ app.use(
 /* =========================================================
    EDUCATOR EXAM MANAGEMENT
    ========================================================= */
+
+app.use(
+  "/api/educator/mocks",
+  educatorMockRoutes,
+);
 
 app.use(
   "/api/educator/exams",
