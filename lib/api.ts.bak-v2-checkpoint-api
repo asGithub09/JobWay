@@ -1,4 +1,4 @@
-﻿const API_BASE_URL =
+const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:5001/api";
 
@@ -100,7 +100,7 @@ export interface UpdateProfilePayload {
 }
 
 /* ============================================================
-   FACULTY INVITATION ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â EDUCATOR ONBOARDING
+   FACULTY INVITATION Ã¢â‚¬â€ EDUCATOR ONBOARDING
    ============================================================ */
 
 export interface FacultyInvitationValidation {
@@ -599,7 +599,7 @@ export async function createLead(
 }
 
 /* ============================================================
-   ADMIN ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â GET LEADS
+   ADMIN Ã¢â‚¬â€ GET LEADS
    ============================================================ */
 
 export async function getLeads(
@@ -665,7 +665,7 @@ export async function getLeads(
 }
 
 /* ============================================================
-   ADMIN ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â UPDATE LEAD STATUS
+   ADMIN Ã¢â‚¬â€ UPDATE LEAD STATUS
    ============================================================ */
 
 export interface UpdateLeadStatusResponse {
@@ -830,7 +830,7 @@ export async function deleteCourseCategory(
 }
 
 /* ============================================================
-   COURSES ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â PUBLIC
+   COURSES Ã¢â‚¬â€ PUBLIC
    ============================================================ */
 
 /**
@@ -861,7 +861,7 @@ export async function getCourse(
 }
 
 /* ============================================================
-   COURSES ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   COURSES Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 /**
@@ -994,7 +994,7 @@ export async function toggleCourseLandingPage(
 }
 
 /* ============================================================
-   COURSE FACTORY ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   COURSE FACTORY Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export type CourseDraftLesson = {
@@ -1302,7 +1302,7 @@ export async function uploadCourseImage(
   );
 }
 /* ============================================================
-   COURSE FACTORY ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â APPROVAL & PUBLISHING
+   COURSE FACTORY Ã¢â‚¬â€ APPROVAL & PUBLISHING
    ============================================================ */
 
 export type ApproveCourseDraftResponse = {
@@ -1547,7 +1547,7 @@ export async function downloadCourseMaterial(
   }, 1_000);
 }
 /* ============================================================
-   EXAMS / MOCK TESTS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   EXAMS / MOCK TESTS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export interface Exam {
@@ -1687,7 +1687,7 @@ export interface CreateMockTestQuestionPayload {
 }
 
 /* ============================================================
-   EXAMS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â PUBLIC
+   EXAMS Ã¢â‚¬â€ PUBLIC
    ============================================================ */
 
 export async function getPublishedExams(): Promise<{
@@ -1713,7 +1713,7 @@ export async function getPublishedExam(
 }
 
 /* ============================================================
-   EXAMS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   EXAMS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export async function getAdminExams(
@@ -1793,7 +1793,7 @@ export async function deleteExam(
 }
 
 /* ============================================================
-   TEST SERIES ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â PUBLIC
+   TEST SERIES Ã¢â‚¬â€ PUBLIC
    ============================================================ */
 
 export async function getPublishedTestSeries(
@@ -1813,7 +1813,7 @@ export async function getPublishedTestSeries(
 }
 
 /* ============================================================
-   TEST SERIES ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   TEST SERIES Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export async function getAdminTestSeries(
@@ -1893,7 +1893,7 @@ export async function deleteTestSeries(
 }
 
 /* ============================================================
-   MOCK TESTS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â PUBLIC
+   MOCK TESTS Ã¢â‚¬â€ PUBLIC
    ============================================================ */
 
 export async function getPublishedMockTests(
@@ -1929,7 +1929,7 @@ export async function getPublishedMockTest(
 }
 
 /* ============================================================
-   MOCK TEST ATTEMPTS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â STUDENT
+   MOCK TEST ATTEMPTS Ã¢â‚¬â€ STUDENT
    ============================================================ */
 
 export interface MockTestAttemptAnswer {
@@ -2155,7 +2155,7 @@ export async function getMyMockTestAttempts(): Promise<GetMyMockTestAttemptsResp
 }
 
 /* ============================================================
-   MOCK TESTS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   MOCK TESTS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export async function getAdminMockTests(
@@ -2236,7 +2236,7 @@ export async function deleteMockTest(
 }
 
 /* ============================================================
-   QUESTIONS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   QUESTIONS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export async function createMockTestQuestion(
@@ -2312,7 +2312,7 @@ export async function deleteMockTestQuestion(
 
 
 /* ============================================================
-   MOCK TEST QUESTIONS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â UPDATE
+   MOCK TEST QUESTIONS Ã¢â‚¬â€ UPDATE
    ============================================================ */
 
 export async function updateMockTestQuestion(
@@ -2342,7 +2342,7 @@ export async function updateMockTestQuestion(
 
 
 /* ============================================================
-   BATCHES ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   BATCHES Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export type BatchStatus =
@@ -2491,7 +2491,7 @@ export async function updateBatchStatus(
 }
 
 /* ============================================================
-   BATCH STUDENTS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   BATCH STUDENTS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export interface BatchStudent {
@@ -2679,7 +2679,7 @@ export async function getBatchStudentCount(
   );
 }
 /* ============================================================
-   STUDENTS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   STUDENTS Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export interface StudentCurrentBatch {
@@ -2840,7 +2840,7 @@ export async function unassignStudentFromBatch(
   );
 }
 /* ============================================================
-   BATCH COURSES ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   BATCH COURSES Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export interface BatchCourse {
@@ -2994,7 +2994,7 @@ export async function removeCourseFromBatch(
   );
 }
 /* ============================================================
-   STUDENT COURSES ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BATCH ACCESS
+   STUDENT COURSES Ã¢â‚¬â€ BATCH ACCESS
    ============================================================ */
 
 export interface StudentCourseBatch {
@@ -3070,7 +3070,7 @@ export async function getMyCourse(
 }
 
 /* ============================================================
-   STUDENT TEST SERIES ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BATCH ACCESS
+   STUDENT TEST SERIES Ã¢â‚¬â€ BATCH ACCESS
    ============================================================ */
 
 export interface StudentTestSeriesBatch {
@@ -3421,7 +3421,7 @@ export async function getStudentCertificate(
   );
 }
 /* ============================================================
-   BATCH TEST SERIES ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN
+   BATCH TEST SERIES Ã¢â‚¬â€ ADMIN
    ============================================================ */
 
 export interface BatchTestSeriesExam {
@@ -3581,7 +3581,7 @@ export async function removeTestSeriesFromBatch(
   );
 }
 /* ============================================================
-   BATCH EDUCATORS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ADMIN / EDUCATOR
+   BATCH EDUCATORS Ã¢â‚¬â€ ADMIN / EDUCATOR
    ============================================================ */
 
 export interface BatchEducator {
@@ -3850,7 +3850,7 @@ export async function getMyBatches(): Promise<GetMyBatchesResponse> {
 }
 
 /* ============================================================
-   EDUCATOR EMS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â STUDENT EXAMS
+   EDUCATOR EMS Ã¢â‚¬â€ STUDENT EXAMS
    ============================================================ */
 
 export interface StudentEducatorExam {
@@ -4238,111 +4238,3 @@ export async function getEducatorExamReview(
     },
   );
 }
-export interface StudentCourseCheckpointQuestion {
-  id?: string;
-  _id?: string;
-  question: string;
-  options: string[];
-  explanation?: string;
-}
-
-export interface StudentCourseCheckpoint {
-  _id?: string;
-  id?: string;
-  title?: string;
-  questions: StudentCourseCheckpointQuestion[];
-}
-
-export interface StudentCourseCheckpointAttempt {
-  _id?: string;
-  status?: string;
-  answers?: Array<{
-    question: string;
-    selectedAnswer: string;
-  }>;
-  totalQuestions?: number;
-  attempted?: number;
-  correct?: number;
-  incorrect?: number;
-  unanswered?: number;
-  score?: number;
-  percentage?: number;
-  passed?: boolean;
-  submittedAt?: string;
-}
-
-export interface GetStudentCourseCheckpointResponse {
-  success?: boolean;
-  checkpoint?: StudentCourseCheckpoint;
-  attempt?: StudentCourseCheckpointAttempt | null;
-}
-
-export interface SubmitStudentCourseCheckpointPayload {
-  answers: Array<{
-    question: string;
-    selectedAnswer: string;
-  }>;
-}
-
-export interface StudentCourseCheckpointResult {
-  totalQuestions?: number;
-  attempted?: number;
-  correct?: number;
-  incorrect?: number;
-  unanswered?: number;
-  score?: number;
-  percentage?: number;
-  passed?: boolean;
-}
-
-export interface SubmitStudentCourseCheckpointResponse {
-  success?: boolean;
-  message?: string;
-  result?: StudentCourseCheckpointResult;
-}
-
-export async function getStudentCourseCheckpoint(
-  courseId: string,
-  learningItemId: string,
-): Promise<GetStudentCourseCheckpointResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  return request<GetStudentCourseCheckpointResponse>(
-    `/student/course-checkpoints/${encodeURIComponent(courseId)}/${encodeURIComponent(learningItemId)}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-}
-
-export async function submitStudentCourseCheckpoint(
-  courseId: string,
-  learningItemId: string,
-  payload: SubmitStudentCourseCheckpointPayload,
-): Promise<SubmitStudentCourseCheckpointResponse> {
-  const token = getAuthToken();
-
-  if (!token) {
-    throw new Error("Authentication required");
-  }
-
-  return request<SubmitStudentCourseCheckpointResponse>(
-    `/student/course-checkpoints/${encodeURIComponent(courseId)}/${encodeURIComponent(learningItemId)}/submit`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    },
-  );
-}
-

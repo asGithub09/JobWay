@@ -541,10 +541,59 @@ function LessonContent({
   const paragraphs = normalizeContent(lesson.content);
   const keyPoints = lesson.keyPoints || [];
   const bullets = lesson.bullets || [];
+  const type = String(lesson.type || "LECTURE").toUpperCase();
+
+  const mediaUrl =
+    lesson.media?.url ||
+    lesson.mediaUrl ||
+    lesson.url ||
+    "";
+
+  const renderTextContent = () => {
+    if (paragraphs.length === 0) {
+      return (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
+          <FileText className="mx-auto h-8 w-8 text-slate-300" />
+          <p className="mt-3 text-sm font-bold text-slate-600">
+            Learning content is being prepared.
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            Please check back later for the complete content.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="max-w-4xl space-y-5">
+        {paragraphs.map((paragraph, index) => {
+          if (isProbablyHtml(paragraph)) {
+            return (
+              <div
+                key={index}
+                className="prose prose-slate max-w-none text-sm leading-7 sm:text-base"
+                dangerouslySetInnerHTML={{
+                  __html: paragraph,
+                }}
+              />
+            );
+          }
+
+          return (
+            <p
+              key={index}
+              className="text-sm leading-8 text-slate-700 sm:text-base"
+            >
+              {paragraph}
+            </p>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      {/* Lesson Header */}
       <div className="border-b border-slate-200 bg-gradient-to-br from-red-50/80 via-white to-slate-50 px-5 py-6 sm:px-8 sm:py-7">
         <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
           <span className="rounded-full bg-red-100 px-3 py-1.5 text-red-700">
@@ -554,13 +603,16 @@ function LessonContent({
           <span className="text-slate-400">/</span>
 
           <span className="rounded-full bg-white px-3 py-1.5 text-slate-600 shadow-sm">
-            Lesson {lessonIndex + 1}
+            {type === "V2_CHECKPOINT"
+              ? "MCQ Checkpoint"
+              : type === "PRACTICE"
+                ? "Practice"
+                : type}
           </span>
         </div>
 
         <h1 className="mt-4 max-w-4xl text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-3xl">
-          {lesson.title ||
-            `Lesson ${lessonIndex + 1}`}
+          {lesson.title || `Lesson ${lessonIndex + 1}`}
         </h1>
 
         {lesson.description ? (
@@ -577,13 +629,11 @@ function LessonContent({
         ) : null}
       </div>
 
-      {/* Lesson Body */}
       <div className="px-5 py-7 sm:px-8 sm:py-9">
         {keyPoints.length > 0 ? (
           <section className="mb-8">
             <div className="mb-4 flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-[#E13032]" />
-
               <h2 className="text-lg font-black text-slate-900">
                 Key Points
               </h2>
@@ -593,10 +643,9 @@ function LessonContent({
               {keyPoints.map((point, index) => (
                 <div
                   key={`${point}-${index}`}
-                  className="flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50/50 p-4 transition-shadow hover:shadow-sm"
+                  className="flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50/50 p-4"
                 >
                   <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#E13032]" />
-
                   <p className="text-sm font-semibold leading-6 text-slate-700">
                     {point}
                   </p>
@@ -629,55 +678,150 @@ function LessonContent({
           </section>
         ) : null}
 
-        {/* Main Content */}
-        <section>
-          <div className="mb-4 flex items-center gap-2">
-            <FileText className="h-5 w-5 text-[#E13032]" />
+        {type === "VIDEO" && mediaUrl ? (
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <PlayCircle className="h-5 w-5 text-[#E13032]" />
+              <h2 className="text-lg font-black text-slate-900">
+                Video Lesson
+              </h2>
+            </div>
 
-            <h2 className="text-lg font-black text-slate-900">
-              Lesson Content
-            </h2>
-          </div>
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-black">
+              <video
+                controls
+                preload="metadata"
+                className="aspect-video w-full"
+                src={mediaUrl}
+              >
+                Your browser does not support video playback.
+              </video>
+            </div>
 
-          {paragraphs.length > 0 ? (
-            <div className="max-w-4xl space-y-5">
-              {paragraphs.map((paragraph, index) => {
-                if (isProbablyHtml(paragraph)) {
-                  return (
-                    <div
-                      key={index}
-                      className="prose prose-slate max-w-none text-sm leading-7 sm:text-base prose-headings:font-black prose-headings:text-slate-900 prose-strong:text-slate-900 prose-a:font-bold prose-a:text-[#E13032]"
-                      dangerouslySetInnerHTML={{
-                        __html: paragraph,
-                      }}
-                    />
-                  );
-                }
+            {paragraphs.length > 0 ? (
+              <div className="mt-6">{renderTextContent()}</div>
+            ) : null}
+          </section>
+        ) : type === "AUDIO" && mediaUrl ? (
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <PlayCircle className="h-5 w-5 text-[#E13032]" />
+              <h2 className="text-lg font-black text-slate-900">
+                Audio Lesson
+              </h2>
+            </div>
 
-                return (
-                  <p
-                    key={index}
-                    className="text-sm leading-8 text-slate-700 sm:text-base"
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <audio controls className="w-full" src={mediaUrl}>
+                Your browser does not support audio playback.
+              </audio>
+            </div>
+
+            {paragraphs.length > 0 ? (
+              <div className="mt-6">{renderTextContent()}</div>
+            ) : null}
+          </section>
+        ) : type === "IMAGE" && mediaUrl ? (
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-[#E13032]" />
+              <h2 className="text-lg font-black text-slate-900">
+                Visual Lesson
+              </h2>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <img
+                src={mediaUrl}
+                alt={lesson.title || "Course image"}
+                className="mx-auto max-h-[650px] w-full object-contain"
+              />
+            </div>
+
+            {paragraphs.length > 0 ? (
+              <div className="mt-6">{renderTextContent()}</div>
+            ) : null}
+          </section>
+        ) : type === "RESOURCE" ? (
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-[#E13032]" />
+              <h2 className="text-lg font-black text-slate-900">
+                Learning Resource
+              </h2>
+            </div>
+
+            {renderTextContent()}
+
+            {mediaUrl ? (
+              <a
+                href={mediaUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#E13032] px-5 py-3 text-sm font-bold text-white"
+              >
+                Open Resource
+                <ChevronRight className="h-4 w-4" />
+              </a>
+            ) : null}
+          </section>
+        ) : type === "PRACTICE" ? (
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-[#E13032]" />
+              <h2 className="text-lg font-black text-slate-900">
+                Practice
+              </h2>
+            </div>
+
+            {renderTextContent()}
+
+            {lesson.questions && lesson.questions.length > 0 ? (
+              <div className="mt-7 space-y-4">
+                {lesson.questions.map((question, index) => (
+                  <div
+                    key={question.id || question._id || index}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5"
                   >
-                    {paragraph}
-                  </p>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
-              <FileText className="mx-auto h-8 w-8 text-slate-300" />
+                    <p className="text-sm font-bold leading-6 text-slate-900">
+                      {index + 1}. {question.question}
+                    </p>
 
-              <p className="mt-3 text-sm font-bold text-slate-600">
-                Lesson content is being prepared.
-              </p>
-
-              <p className="mt-1 text-xs text-slate-400">
-                Please check back later for the complete lesson.
-              </p>
+                    {question.options?.length ? (
+                      <div className="mt-4 space-y-2">
+                        {question.options.map((option, optionIndex) => (
+                          <div
+                            key={`${option}-${optionIndex}`}
+                            className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                          >
+                            {String.fromCharCode(65 + optionIndex)}. {option}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : type === "V2_CHECKPOINT" ? (
+          <StudentCourseCheckpointContent
+            courseId={courseId}
+            learningItemId={lesson.id || lesson._id}
+            title={lesson.title}
+          />
+        ) : (
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-[#E13032]" />
+              <h2 className="text-lg font-black text-slate-900">
+                Lesson Content
+              </h2>
             </div>
-          )}
-        </section>
+
+            {renderTextContent()}
+          </section>
+        )}
 
         {lesson.sourceSection ? (
           <div className="mt-8 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
@@ -699,6 +843,361 @@ function LessonContent({
   );
 }
 
+function StudentCourseCheckpointContent({
+  courseId,
+  learningItemId,
+  title,
+}: {
+  courseId?: string;
+  learningItemId?: string;
+  title?: string;
+}) {
+  const [checkpoint, setCheckpoint] =
+    useState<StudentCourseCheckpoint | null>(null);
+
+  const [selectedAnswers, setSelectedAnswers] =
+    useState<Record<string, string>>({});
+
+  const [result, setResult] =
+    useState<StudentCourseCheckpointResult>();
+
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCheckpoint() {
+      if (!courseId || !learningItemId) {
+        if (!cancelled) {
+          setError("Checkpoint information is unavailable.");
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+
+        const response =
+          await getStudentCourseCheckpoint(
+            courseId,
+            learningItemId,
+          );
+
+        if (cancelled) return;
+
+        if (!response?.success || !response.checkpoint) {
+          throw new Error("Unable to load this checkpoint.");
+        }
+
+        setCheckpoint(response.checkpoint);
+
+        const existingAttempt = response.attempt;
+
+        if (
+          existingAttempt &&
+          (existingAttempt.status === "SUBMITTED" ||
+            existingAttempt.status === "COMPLETED")
+        ) {
+          setResult({
+            totalQuestions: existingAttempt.totalQuestions,
+            attempted: existingAttempt.attempted,
+            correct: existingAttempt.correct,
+            incorrect: existingAttempt.incorrect,
+            unanswered: existingAttempt.unanswered,
+            score: existingAttempt.score,
+            percentage: existingAttempt.percentage,
+            passed: existingAttempt.passed,
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load this checkpoint.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCheckpoint();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, learningItemId]);
+
+  const questionKey = (
+    question: StudentCourseCheckpointQuestion,
+    index: number,
+  ) => question.id || question._id || String(index);
+
+  async function submitCheckpoint() {
+    if (
+      !courseId ||
+      !learningItemId ||
+      !checkpoint ||
+      submitting ||
+      result
+    ) {
+      return;
+    }
+
+    const answers = checkpoint.questions.map(
+      (
+        question: StudentCourseCheckpointQuestion,
+        index: number,
+      ) => ({
+        question: question.question,
+        selectedAnswer:
+          selectedAnswers[questionKey(question, index)] || "",
+      }),
+    );
+
+    if (
+      answers.some(
+        (answer) => !answer.selectedAnswer,
+      )
+    ) {
+      setError(
+        "Please answer all questions before submitting.",
+      );
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError("");
+
+      const response =
+        await submitStudentCourseCheckpoint(
+          courseId,
+          learningItemId,
+          { answers },
+        );
+
+      if (!response?.success || !response.result) {
+        throw new Error(
+          response?.message ||
+            "Unable to submit checkpoint.",
+        );
+      }
+
+      setResult(response.result);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to submit checkpoint.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
+        <Loader2 className="mx-auto h-7 w-7 animate-spin text-[#E13032]" />
+
+        <p className="mt-3 text-sm font-bold text-slate-600">
+          Loading checkpoint...
+        </p>
+      </section>
+    );
+  }
+
+  if (error && !checkpoint) {
+    return (
+      <section className="rounded-2xl border border-red-200 bg-red-50 p-6">
+        <p className="text-sm font-bold text-red-700">
+          {error}
+        </p>
+      </section>
+    );
+  }
+
+  if (!checkpoint) {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+        <p className="text-sm font-bold text-slate-600">
+          Checkpoint is unavailable.
+        </p>
+      </section>
+    );
+  }
+
+  if (result) {
+    const percentage = Number(result.percentage ?? 0);
+    const passed = Boolean(result.passed);
+
+    return (
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+        <div className="flex items-start gap-4">
+          <div className="rounded-2xl bg-emerald-50 p-3">
+            <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+          </div>
+
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+              Checkpoint Submitted
+            </p>
+
+            <h2 className="mt-1 text-xl font-black text-slate-900">
+              {title || "MCQ Checkpoint"}
+            </h2>
+          </div>
+        </div>
+
+        <div className="mt-7 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-bold text-slate-400">
+              Score
+            </p>
+            <p className="mt-1 text-2xl font-black text-slate-900">
+              {result.score ?? 0}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-bold text-slate-400">
+              Percentage
+            </p>
+            <p className="mt-1 text-2xl font-black text-slate-900">
+              {percentage}%
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-bold text-slate-400">
+              Result
+            </p>
+            <p className="mt-1 text-2xl font-black text-slate-900">
+              {passed ? "Passed" : "Completed"}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+          <p className="text-sm font-semibold leading-6 text-emerald-800">
+            This checkpoint has already been submitted. A new attempt is not available.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 bg-slate-50 px-5 py-5 sm:px-7">
+        <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+          MCQ Checkpoint
+        </p>
+
+        <h2 className="mt-1 text-xl font-black text-slate-900">
+          {title || "Course Checkpoint"}
+        </h2>
+
+        <p className="mt-2 text-sm text-slate-500">
+          Answer all questions and submit your checkpoint.
+        </p>
+      </div>
+
+      <div className="space-y-6 p-5 sm:p-7">
+        {checkpoint.questions.map(
+          (
+            question: StudentCourseCheckpointQuestion,
+            index: number,
+          ) => {
+            const key = questionKey(question, index);
+            const selected = selectedAnswers[key];
+
+            return (
+              <div
+                key={key}
+                className="rounded-2xl border border-slate-200 p-5"
+              >
+                <p className="text-sm font-bold leading-7 text-slate-900">
+                  {index + 1}. {question.question}
+                </p>
+
+                <div className="mt-4 grid gap-3">
+                  {question.options.map(
+                    (
+                      option: string,
+                      optionIndex: number,
+                    ) => {
+                      const optionLetter =
+                        String.fromCharCode(65 + optionIndex);
+
+                      const value =
+                        `${optionLetter}. ${option}`;
+
+                      const isSelected =
+                        selected === value;
+
+                      return (
+                        <button
+                          key={`${key}-${optionIndex}`}
+                          type="button"
+                          onClick={() =>
+                            setSelectedAnswers((current) => ({
+                              ...current,
+                              [key]: value,
+                            }))
+                          }
+                          className={`w-full rounded-xl border px-4 py-3 text-left text-sm font-semibold transition ${
+                            isSelected
+                              ? "border-[#E13032] bg-red-50 text-[#E13032]"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-red-200 hover:bg-red-50/40"
+                          }`}
+                        >
+                          {value}
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+              </div>
+            );
+          },
+        )}
+
+        {error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-sm font-semibold text-red-700">
+              {error}
+            </p>
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={submitCheckpoint}
+          disabled={submitting}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#E13032] px-6 py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            "Submit Checkpoint"
+          )}
+        </button>
+      </div>
+    </section>
+  );
+}
 function PracticeSection({
   practice,
 }: {
@@ -1962,6 +2461,7 @@ export default function ProtectedCourseLearningPage() {
       </div>
 );
 }
+
 
 
 
