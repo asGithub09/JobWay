@@ -1,0 +1,212 @@
+const mongoose = require("mongoose");
+
+const lessonSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
+
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 2000,
+    },
+
+    content: {
+      type: String,
+      default: "",
+    },
+
+    keyPoints: {
+      type: [String],
+      default: [],
+    },
+
+    bullets: {
+      type: [String],
+      default: [],
+    },
+
+    sourceSection: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    order: {
+      type: Number,
+      default: 0,
+    },
+  },
+  {
+    _id: true,
+  }
+);
+
+const moduleSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
+
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 2000,
+    },
+
+    lessons: {
+      type: [lessonSchema],
+      default: [],
+    },
+
+    order: {
+      type: Number,
+      default: 0,
+    },
+  },
+  {
+    _id: true,
+  }
+);
+
+const educatorCourseSchema =
+  new mongoose.Schema(
+    {
+      title: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: 200,
+      },
+
+      slug: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true,
+        index: true,
+      },
+
+      category: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: 100,
+      },
+
+      level: {
+        type: String,
+        default: "All Levels",
+        trim: true,
+        maxlength: 100,
+      },
+
+      description: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: 5000,
+      },
+
+      bannerImage: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      duration: {
+        type: String,
+        default: "Self Paced",
+        trim: true,
+        maxlength: 100,
+      },
+
+      language: {
+        type: String,
+        default: "English / Hindi",
+        trim: true,
+        maxlength: 100,
+      },
+
+      price: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+
+      discountPrice: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+
+      features: {
+        type: [String],
+        default: [],
+      },
+
+      modules: {
+        type: [moduleSchema],
+        default: [],
+      },
+
+      status: {
+        type: String,
+        enum: [
+          "DRAFT",
+          "PUBLISHED",
+        ],
+        default: "DRAFT",
+        index: true,
+      },
+
+      sourceDraft: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "EducatorCourseDraft",
+        default: null,
+        index: true,
+      },
+
+      createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+        index: true,
+      },
+
+      publishedAt: {
+        type: Date,
+        default: null,
+      },
+    },
+    {
+      timestamps: true,
+    }
+  );
+
+educatorCourseSchema.index({
+  createdBy: 1,
+  createdAt: -1,
+});
+
+educatorCourseSchema.index({
+  createdBy: 1,
+  status: 1,
+});
+
+module.exports =
+  mongoose.models.EducatorCourse ||
+  mongoose.model(
+    "EducatorCourse",
+    educatorCourseSchema
+  );

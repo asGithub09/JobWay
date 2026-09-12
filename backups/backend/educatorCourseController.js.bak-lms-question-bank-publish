@@ -1,0 +1,555 @@
+const EducatorCourse = require("../models/EducatorCourse");
+const User = require("../models/User");
+const BatchCourse = require("../models/BatchCourse");
+const BatchEducator = require("../models/BatchEducator");
+const Course = require("../models/Course");
+
+function createSlug(value) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function serializeCourse(course) {
+  return {
+    id: course._id.toString(),
+
+    draftId: course.sourceDraft
+      ? course.sourceDraft.toString()
+      : null,
+
+    title: course.title,
+    slug: course.slug,
+    category: course.category,
+    level: course.level,
+    description: course.description,
+    bannerImage: course.bannerImage,
+    duration: course.duration,
+    language: course.language,
+    price: course.price,
+    discountPrice: course.discountPrice,
+    features: course.features,
+    modules: course.modules,
+    status: course.status,
+    createdBy:
+      course.createdBy?.toString?.() || course.createdBy,
+    publishedAt: course.publishedAt,
+    createdAt: course.createdAt,
+    updatedAt: course.updatedAt,
+  };
+}
+
+async function generateUniqueSlug(
+  title,
+  excludeId = null
+) {
+  const baseSlug =
+    createSlug(title) || `course-${Date.now()}`;
+
+  let slug = baseSlug;
+  let counter = 2;
+
+  while (true) {
+    const filter = { slug };
+
+    if (excludeId) {
+      filter._id = { $ne: excludeId };
+    }
+
+    const existing =
+      await EducatorCourse.findOne(filter).select(
+        "_id"
+      );
+
+    if (!existing) {
+      return slug;
+    }
+
+    slug = `${baseSlug}-${counter}`;
+    counter += 1;
+  }
+}
+
+async function getCourses(req, res) {
+  try {
+    const courses =
+      await EducatorCourse.find({
+        createdBy: req.user.userId,
+      }).sort({ updatedAt: -1 });
+
+    return res.json({
+      success: true,
+      courses: courses.map(serializeCourse),
+    });
+  } catch (error) {
+    console.error(
+      "Educator get courses error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to load educator courses.",
+    });
+  }
+}
+
+async function getCourse(req, res) {
+  try {
+    const course =
+      await EducatorCourse.findOne({
+        _id: req.params.id,
+        createdBy: req.user.userId,
+      });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      course: serializeCourse(course),
+    });
+  } catch (error) {
+    console.error(
+      "Educator get course error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load course.",
+    });
+  }
+}
+
+async function createCourse(req, res) {
+  try {
+    const {
+      title,
+      category,
+      level,
+      description,
+      bannerImage,
+      duration,
+      language,
+      price,
+      discountPrice,
+      features,
+      modules,
+    } = req.body;
+
+    if (!title || !String(title).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Course title is required.",
+      });
+    }
+
+    if (!category || !String(category).trim()) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Course category is required.",
+      });
+    }
+
+    const slug =
+      await generateUniqueSlug(title);
+
+    const course =
+      await EducatorCourse.create({
+        title: String(title).trim(),
+        slug,
+        category: String(category).trim(),
+        level: level || "All Levels",
+        description: description || "",
+        bannerImage: bannerImage || "",
+        duration: duration || "Self Paced",
+        language:
+          language || "English / Hindi",
+        price: Number(price) || 0,
+        discountPrice:
+          Number(discountPrice) || 0,
+        features: Array.isArray(features)
+          ? features
+          : [],
+        modules: Array.isArray(modules)
+          ? modules
+          : [],
+        status: "DRAFT",
+        createdBy: req.user.userId,
+      });
+
+    return res.status(201).json({
+      success: true,
+      message:
+        "Educator course draft created successfully.",
+      course: serializeCourse(course),
+    });
+  } catch (error) {
+    console.error(
+      "Educator create course error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to create educator course.",
+    });
+  }
+}
+
+async function updateCourse(req, res) {
+  try {
+    const course =
+      await EducatorCourse.findOne({
+        _id: req.params.id,
+        createdBy: req.user.userId,
+      });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found.",
+      });
+    }
+
+    if (course.status === "PUBLISHED") {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Published courses cannot be edited in this phase.",
+      });
+    }
+
+    const allowedFields = [
+      "title",
+      "category",
+      "level",
+      "description",
+      "bannerImage",
+      "duration",
+      "language",
+      "price",
+      "discountPrice",
+      "features",
+      "modules",
+    ];
+
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        course[field] = req.body[field];
+      }
+    }
+
+    if (req.body.title !== undefined) {
+      course.slug =
+        await generateUniqueSlug(
+          req.body.title,
+          course._id
+        );
+    }
+
+    await course.save();
+
+    return res.json({
+      success: true,
+      message:
+        "Educator course saved successfully.",
+      course: serializeCourse(course),
+    });
+  } catch (error) {
+    console.error(
+      "Educator update course error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to update educator course.",
+    });
+  }
+}
+
+async function publishCourse(req, res) {
+  try {
+    const educatorId = req.user.userId;
+
+    const course = await EducatorCourse.findOne({
+      _id: req.params.id,
+      createdBy: educatorId,
+    });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found.",
+      });
+    }
+
+    if (!course.title || !course.category) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Course title and category are required before publishing.",
+      });
+    }
+
+    if (String(course.title).length > 150) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Course title must be 150 characters or fewer before publishing.",
+      });
+    }
+
+    if (String(course.description || "").length > 2000) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Course description must be 2,000 characters or fewer before publishing.",
+      });
+    }
+
+    const educator = await User.findById(educatorId).select(
+      "name email role"
+    );
+
+    if (!educator || educator.role !== "educator") {
+      return res.status(403).json({
+        success: false,
+        message: "Educator account could not be verified.",
+      });
+    }
+
+    const assignments = await BatchEducator.find({
+      educator: educatorId,
+      status: "active",
+    }).populate({
+      path: "batch",
+      select: "_id name code status",
+    });
+
+    const activeBatches = assignments
+      .map((assignment) => assignment.batch)
+      .filter(
+        (batch) =>
+          batch &&
+          String(batch.status || "").toLowerCase() !== "archived"
+      );
+
+    if (activeBatches.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You must be assigned to at least one active batch before publishing a course.",
+      });
+    }
+
+    let studentCourse = await Course.findOne({
+      educatorCourse: course._id,
+    });
+
+    const syllabus = (course.modules || []).map((module) => ({
+      title: module.title || "",
+      description: module.description || "",
+    }));
+
+    const instructorName =
+      educator.name ||
+      educator.email ||
+      "JobWay Educator";
+
+    const curriculumModules = (course.modules || []).map((module) => ({
+      title: module.title || "",
+      description: module.description || "",
+      order: module.order ?? 0,
+      lessons: (module.lessons || []).map((lesson) => ({
+        title: lesson.title || "",
+        description: lesson.description || "",
+        content: lesson.content || "",
+        keyPoints: lesson.keyPoints || [],
+        bullets: lesson.bullets || [],
+        sourceSection: lesson.sourceSection || "",
+        order: lesson.order ?? 0,
+      })),
+      learningItems: (module.learningItems || []).map((item) => ({
+        type: item.type,
+        title: item.title || "",
+        referenceId: item.referenceId || null,
+        content: item.content || "",
+        url: item.url || "",
+        order: item.order ?? 0,
+      })),
+    }));
+
+    const courseData = {
+      title: course.title,
+      category: course.category,
+      level: course.level || "Beginner",
+      description: course.description || "",
+      bannerImage: course.bannerImage || "",
+      duration: course.duration || "",
+      language: course.language || "English",
+      price: Number(course.price || 0),
+      discountPrice: Number(course.discountPrice || 0),
+      instructor: instructorName,
+      features: course.features || [],
+      syllabus,
+      curriculum: {
+        modules: curriculumModules,
+        practice: [],
+        sourceFileName: "",
+        generationMode: "educator",
+        detectionMode: "",
+        publishedFromDraft: null,
+        publishedAt: new Date(),
+      },
+      isFeatured: false,
+      isPublished: false,
+    };
+
+    if (!studentCourse) {
+      const baseSlug = createSlug(course.title) || `course-${Date.now()}`;
+
+      let slug = baseSlug;
+      let counter = 2;
+
+      while (await Course.exists({ slug })) {
+        slug = `${baseSlug}-${counter}`;
+        counter += 1;
+      }
+
+      studentCourse = new Course({
+        ...courseData,
+        slug,
+        educatorCourse: course._id,
+      });
+    } else {
+      Object.assign(studentCourse, courseData);
+      studentCourse.educatorCourse = course._id;
+    }
+
+    await studentCourse.save();
+
+    const publishedAt = new Date();
+
+    for (const batch of activeBatches) {
+      await BatchCourse.updateOne(
+        {
+          batch: batch._id,
+          course: studentCourse._id,
+        },
+        {
+          $set: {
+            status: "active",
+            assignedAt: publishedAt,
+            assignedBy: educatorId,
+          },
+          $setOnInsert: {
+            batch: batch._id,
+            course: studentCourse._id,
+          },
+        },
+        {
+          upsert: true,
+        }
+      );
+    }
+
+    studentCourse.isPublished = true;
+
+    if (studentCourse.curriculum) {
+      studentCourse.curriculum.publishedAt = publishedAt;
+    }
+
+    await studentCourse.save();
+
+    course.status = "PUBLISHED";
+    course.publishedAt = publishedAt;
+
+    await course.save();
+
+    return res.json({
+      success: true,
+      message:
+        "Course published successfully and made available to your assigned batches.",
+      course: serializeCourse(course),
+    });
+  } catch (error) {
+    console.error(
+      "Educator publish course error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "We couldn't publish this course right now. Please try again.",
+    });
+  }
+}
+
+async function deleteCourse(req, res) {
+  try {
+    const course =
+      await EducatorCourse.findOne({
+        _id: req.params.id,
+        createdBy: req.user.userId,
+      });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found.",
+      });
+    }
+
+    if (course.status === "PUBLISHED") {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Published courses cannot be deleted in this phase.",
+      });
+    }
+
+    await EducatorCourse.findByIdAndDelete(
+      course._id
+    );
+
+    return res.json({
+      success: true,
+      message:
+        "Educator course deleted successfully.",
+    });
+  } catch (error) {
+    console.error(
+      "Educator delete course error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to delete educator course.",
+    });
+  }
+}
+
+module.exports = {
+  getCourses,
+  getCourse,
+  createCourse,
+  updateCourse,
+  publishCourse,
+  deleteCourse,
+};

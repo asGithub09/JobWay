@@ -1,0 +1,226 @@
+const {
+  createCourseV2,
+  getCourseV2,
+  updateCourseV2,
+  deleteCourseV2,
+  publishCourseV2,
+} = require("../services/courseV2Service");
+
+const {
+  parseCourseDocument,
+} = require("../services/ai/courseParser");
+
+function getUserId(req) {
+  return req.user?._id || req.user?.id || req.user?.userId;
+}
+
+function handleError(res, error) {
+  console.error("CourseV2 controller error:", error);
+
+  return res.status(error.statusCode || 500).json({
+    success: false,
+    message: error.message || "Course operation failed.",
+  });
+}
+
+async function create(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authenticated user could not be identified.",
+      });
+    }
+
+    const course = await createCourseV2({
+      createdBy: userId,
+      data: req.body || {},
+    });
+
+    return res.status(201).json({
+      success: true,
+      course,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function getOne(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authenticated user could not be identified.",
+      });
+    }
+
+    const course = await getCourseV2(req.params.id, userId);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      course,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function update(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authenticated user could not be identified.",
+      });
+    }
+
+    const course = await updateCourseV2(
+      req.params.id,
+      userId,
+      req.body || {}
+    );
+
+    return res.json({
+      success: true,
+      course,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function remove(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authenticated user could not be identified.",
+      });
+    }
+
+    await deleteCourseV2(req.params.id, userId);
+
+    return res.json({
+      success: true,
+      message: "Course deleted successfully.",
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function publish(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required.",
+      });
+    }
+
+    const result = await publishCourseV2(
+      req.params.id,
+      userId
+    );
+
+    return res.json({
+      success: true,
+      message:
+        "Course published successfully and made available to your assigned batches.",
+      course: result.course,
+      studentCourse: result.studentCourse,
+      assignedBatchCount: result.assignedBatchCount,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+async function importDocument(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authenticated user could not be identified.",
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Please upload a PDF, DOCX, or XLSX file.",
+      });
+    }
+
+    const allowedMimeTypes = new Set([
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/msword",
+      "application/vnd.ms-excel",
+    ]);
+
+    if (!allowedMimeTypes.has(req.file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: "Only PDF, DOCX, and XLSX files are supported.",
+      });
+    }
+
+    const extractedCourse = await parseCourseDocument({
+      fileBytes: req.file.buffer,
+      mimeType: req.file.mimetype,
+      fileName: req.file.originalname,
+    });
+
+    const course = await createCourseV2({
+      createdBy: userId,
+      data: {
+        ...extractedCourse,
+        source: {
+          type: "AI",
+          fileName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          aiProvider: "gemini",
+        },
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Course draft created from document.",
+      course,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+module.exports = {
+  create,
+  getOne,
+  update,
+  remove,
+  publish,
+  importDocument,
+};
+

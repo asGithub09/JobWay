@@ -1,0 +1,128 @@
+﻿const {
+  createCourseV2,
+  getCourseV2,
+  updateCourseV2,
+  deleteCourseV2,
+} = require("../services/courseV2Service");
+
+function getUserId(req) {
+  return req.user?._id || req.user?.id || req.user?.userId;
+}
+
+function handleError(res, error) {
+  console.error("CourseV2 controller error:", error);
+
+  return res.status(error.statusCode || 500).json({
+    success: false,
+    message: error.message || "Course operation failed.",
+  });
+}
+
+async function create(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authenticated user could not be identified.",
+      });
+    }
+
+    const course = await createCourseV2({
+      createdBy: userId,
+      data: req.body || {},
+    });
+
+    return res.status(201).json({
+      success: true,
+      course,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function getOne(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authenticated user could not be identified.",
+      });
+    }
+
+    const course = await getCourseV2(req.params.id, userId);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      course,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function update(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authenticated user could not be identified.",
+      });
+    }
+
+    const course = await updateCourseV2(
+      req.params.id,
+      userId,
+      req.body || {}
+    );
+
+    return res.json({
+      success: true,
+      course,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function remove(req, res) {
+  try {
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authenticated user could not be identified.",
+      });
+    }
+
+    await deleteCourseV2(req.params.id, userId);
+
+    return res.json({
+      success: true,
+      message: "Course deleted successfully.",
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+module.exports = {
+  create,
+  getOne,
+  update,
+  remove,
+};

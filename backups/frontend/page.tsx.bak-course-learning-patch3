@@ -32,16 +32,12 @@ import {
   completeStudentCourseLesson,
   updateStudentCourseLesson,
   issueStudentCertificate,
-  getStudentCourseCheckpoint,
-  submitStudentCourseCheckpoint,
   type Course,
   type GetMyCourseResponse,
   type StudentCourseProgress,
 } from "@/lib/api";
 
 type CourseLesson = {
-  id?: string;
-  _id?: string;
   title?: string;
   description?: string;
   content?: string;
@@ -49,38 +45,16 @@ type CourseLesson = {
   bullets?: string[];
   sourceSection?: string;
   order?: number;
-
-  type?: string;
-  mediaUrl?: string;
-  url?: string;
-  media?: {
-    url?: string;
-    publicId?: string;
-    resourceType?: string;
-    format?: string;
-  };
-  questions?: CoursePracticeQuestion[];
-  options?: string[];
-  correctAnswer?: number;
-  explanation?: string;
 };
 
-type CourseLearningItem = CourseLesson & {
-  id?: string;
-  _id?: string;
-  type?: string;
-};
 type CourseModule = {
   title?: string;
   description?: string;
   order?: number;
   lessons?: CourseLesson[];
-  learningItems?: CourseLearningItem[];
 };
 
 type CoursePracticeQuestion = {
-  id?: string;
-  _id?: string;
   type?: string;
   question?: string;
   options?: string[];
@@ -88,56 +62,6 @@ type CoursePracticeQuestion = {
   explanation?: string;
   sourceSection?: string;
   order?: number;
-};
-
-type StudentCourseCheckpointQuestion = {
-  id?: string;
-  _id?: string;
-  question: string;
-  options: string[];
-  explanation?: string;
-};
-
-type StudentCourseCheckpointResult = {
-  totalQuestions?: number;
-  attempted?: number;
-  correct?: number;
-  incorrect?: number;
-  unanswered?: number;
-  score?: number;
-  percentage?: number;
-  passed?: boolean;
-};
-
-type StudentCourseCheckpointAttempt = {
-  _id?: string;
-  status?: string;
-  answers?: Array<{
-    question: string;
-    selectedAnswer: string;
-  }>;
-  totalQuestions?: number;
-  attempted?: number;
-  correct?: number;
-  incorrect?: number;
-  unanswered?: number;
-  score?: number;
-  percentage?: number;
-  passed?: boolean;
-  submittedAt?: string;
-};
-
-type StudentCourseCheckpoint = {
-  _id?: string;
-  id?: string;
-  title?: string;
-  questions: StudentCourseCheckpointQuestion[];
-};
-
-type SubmitStudentCourseCheckpointResponse = {
-  success?: boolean;
-  message?: string;
-  result?: StudentCourseCheckpointResult;
 };
 
 type CoursePractice = {
@@ -179,41 +103,6 @@ function getCourseCurriculum(course: Course): CourseCurriculum {
   return (course as ExtendedCourse).curriculum || {};
 }
 
-function normalizeLearningItem(
-  item: CourseLearningItem,
-): CourseLesson {
-  const mediaUrl =
-    item.media?.url ||
-    item.mediaUrl ||
-    item.url ||
-    "";
-
-  return {
-    title: item.title,
-    description: item.description,
-    content: item.content,
-    keyPoints: item.keyPoints,
-    bullets: item.bullets,
-    sourceSection: item.sourceSection,
-    order: item.order,
-    type: item.type,
-    mediaUrl,
-    url: item.url,
-    media: item.media,
-    questions: item.questions,
-    options: item.options,
-    correctAnswer: item.correctAnswer,
-    explanation: item.explanation,
-  };
-}
-
-function getModuleLessons(module: CourseModule): CourseLesson[] {
-  if (module.learningItems?.length) {
-    return module.learningItems.map(normalizeLearningItem);
-  }
-
-  return module.lessons || [];
-}
 function normalizeContent(content?: string) {
   if (!content) {
     return [];
@@ -361,7 +250,7 @@ function ModuleNavigation({
   return (
     <div className="space-y-2">
       {modules.map((module, moduleIndex) => {
-        const lessons = getModuleLessons(module);
+        const lessons = module.lessons || [];
         const isOpen =
           openModules[moduleIndex] ??
           moduleIndex === selectedModuleIndex;
@@ -526,13 +415,11 @@ function ModuleNavigation({
 }
 
 function LessonContent({
-  courseId,
   lesson,
   module,
   moduleIndex,
   lessonIndex,
 }: {
-  courseId?: string;
   lesson: CourseLesson;
   module: CourseModule;
   moduleIndex: number;
@@ -558,13 +445,13 @@ function LessonContent({
           </span>
         </div>
 
-        <h1 className="mt-4 max-w-4xl text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-3xl">
+        <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
           {lesson.title ||
             `Lesson ${lessonIndex + 1}`}
         </h1>
 
         {lesson.description ? (
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
+          <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600 sm:text-base">
             {lesson.description}
           </p>
         ) : null}
@@ -640,13 +527,13 @@ function LessonContent({
           </div>
 
           {paragraphs.length > 0 ? (
-            <div className="max-w-4xl space-y-5">
+            <div className="space-y-5">
               {paragraphs.map((paragraph, index) => {
                 if (isProbablyHtml(paragraph)) {
                   return (
                     <div
                       key={index}
-                      className="prose prose-slate max-w-none text-sm leading-7 sm:text-base prose-headings:font-black prose-headings:text-slate-900 prose-strong:text-slate-900 prose-a:font-bold prose-a:text-[#E13032]"
+                      className="prose prose-slate max-w-none text-sm leading-7 sm:text-base"
                       dangerouslySetInnerHTML={{
                         __html: paragraph,
                       }}
@@ -680,7 +567,7 @@ function LessonContent({
         </section>
 
         {lesson.sourceSection ? (
-          <div className="mt-8 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <div className="mt-8 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
 
             <div>
@@ -1001,7 +888,7 @@ export default function ProtectedCourseLearningPage() {
     moduleIndex: number,
   ) {
     const lessons =
-      getModuleLessons(modules[moduleIndex] || {});
+      modules[moduleIndex]?.lessons || [];
 
     if (lessons.length === 0) {
       return false;
@@ -1028,7 +915,7 @@ export default function ProtectedCourseLearningPage() {
       return null;
     }
 
-    const lessons = getModuleLessons(module);
+    const lessons = module.lessons || [];
     const lesson = lessons[selectedLessonIndex];
 
     if (!lesson) {
@@ -1130,7 +1017,7 @@ export default function ProtectedCourseLearningPage() {
       moduleIndex -= 1
     ) {
       const lessons =
-        getModuleLessons(modules[moduleIndex] || {});
+        modules[moduleIndex]?.lessons || [];
 
       if (lessons.length > 0) {
         return {
@@ -1170,7 +1057,7 @@ export default function ProtectedCourseLearningPage() {
       moduleIndex += 1
     ) {
       const lessons =
-        getModuleLessons(modules[moduleIndex] || {});
+        modules[moduleIndex]?.lessons || [];
 
       if (lessons.length > 0) {
         return {
@@ -1635,7 +1522,6 @@ export default function ProtectedCourseLearningPage() {
               {selectedLesson ? (
                 <>
                   <LessonContent
-                    courseId={getCourseId(course)}
                     lesson={selectedLesson.lesson}
                     module={
                       modules[selectedLesson.moduleIndex]
@@ -1962,6 +1848,4 @@ export default function ProtectedCourseLearningPage() {
       </div>
 );
 }
-
-
 

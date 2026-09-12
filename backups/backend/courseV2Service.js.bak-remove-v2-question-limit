@@ -1,0 +1,434 @@
+﻿const CourseV2 = require("../models/CourseV2");
+const Course = require("../models/Course");
+const BatchCourse = require("../models/BatchCourse");
+const BatchEducator = require("../models/BatchEducator");
+const User = require("../models/User");
+
+function normalizeOrders(modules = []) {
+  return modules.map((module, moduleIndex) => ({
+    ...module,
+    order: moduleIndex + 1,
+    items: (module.items || []).map((item, itemIndex) => ({
+      ...item,
+      order: itemIndex + 1,
+    })),
+  }));
+}
+
+function slugify(value = "") {
+  return value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 100);
+}
+
+async function createCourseV2({ createdBy, data = {} }) {
+  const title = String(data.title || "").trim();
+
+  if (!title) {
+    const error = new Error("Course title is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  let baseSlug = slugify(data.slug || title);
+
+  if (!baseSlug) {
+    baseSlug = `course-${Date.now()}`;
+  }
+
+  let slug = baseSlug;
+  let counter = 2;
+
+  while (await CourseV2.exists({ slug })) {
+    slug = `${baseSlug}-${counter}`;
+    counter += 1;
+  }
+
+  const course = await CourseV2.create({
+    ...data,
+    title,
+    slug,
+    createdBy,
+    modules: normalizeOrders(data.modules || []),
+    status: "DRAFT",
+  });
+
+  return course;
+}
+
+async function getCourseV2(courseId, userId) {
+  return CourseV2.findOne({
+    _id: courseId,
+    createdBy: userId,
+  });
+}
+
+async function updateCourseV2(courseId, userId, data = {}) {
+  const course = await getCourseV2(courseId, userId);
+
+  if (!course) {
+    const error = new Error("Course not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (course.status === "PUBLISHED") {
+    const error = new Error("Published courses cannot be edited.");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const allowedFields = [
+    "title",
+    "description",
+    "category",
+    "level",
+    "language",
+    "thumbnail",
+    "modules",
+    "source",
+  ];
+
+  for (const field of allowedFields) {
+    if (data[field] !== undefined) {
+      course.set(
+        field,
+        field === "modules"
+          ? normalizeOrders(data[field] || [])
+          : data[field]
+      );
+    }
+  }
+
+  await course.save();
+
+  return course;
+}
+
+async function deleteCourseV2(courseId, userId) {
+  const course = await getCourseV2(courseId, userId);
+
+  if (!course) {
+    const error = new Error("Course not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (course.status === "PUBLISHED") {
+    const error = new Error("Published courses cannot be deleted.");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  await CourseV2.deleteOne({ _id: course._id });
+
+  return true;
+}
+
+function convertCheckpointQuestions(questions = []) {
+  if (!Array.isArray(questions) || questions.length !== 10) {
+    const error = new Error(
+      "Every CHECKPOINT must contain exactly 10 MCQ questions before publishing."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return questions.map((question) => {
+    if (
+      !question ||
+      typeof question.question !== "string" ||
+      !question.question.trim()
+    ) {
+      const error = new Error(
+        "Every CHECKPOINT question must contain question text."
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!Array.isArray(question.options) || question.options.length !== 4) {
+      const error = new Error(
+        "Every CHECKPOINT question must contain exactly 4 options."
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const correctAnswer = Number(question.correctAnswer);
+
+    if (
+      !Number.isInteger(correctAnswer) ||
+      correctAnswer < 0 ||
+      correctAnswer > 3
+    ) {
+      const error = new Error(
+        "Every CHECKPOINT question must have a valid correct answer from 0 to 3."
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    return {
+      questionText: question.question.trim(),
+      options: question.options.map((text, index) => ({
+        key: String.fromCharCode(65 + index),
+        text: String(text || "").trim(),
+      })),
+      correctAnswer: String.fromCharCode(65 + correctAnswer),
+      explanation: String(question.explanation || "").trim(),
+    };
+  });
+}
+
+function convertV2Item(item = {}) {
+  const typeMap = {
+    TEXT: "LECTURE",
+    VIDEO: "VIDEO",
+    AUDIO: "AUDIO",
+    IMAGE: "IMAGE",
+    RESOURCE: "RESOURCE",
+    PRACTICE: "PRACTICE",
+    CHECKPOINT: "MOCK",
+  };
+
+  const legacyType = typeMap[item.type];
+
+  if (!legacyType) {
+    const error = new Error(
+      `Unsupported V2 course item type: ${item.type || "unknown"}.`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const converted = {
+    type: legacyType,
+    title: String(item.title || "").trim(),
+    content: String(item.content || ""),
+    url: String(item.url || item.resourceUrl || ""),
+    order: Number(item.order || 0),
+    referenceId: null,
+    referenceIds: [],
+    mediaPublicId: String(item.media?.publicId || ""),
+    mediaResourceType: String(item.media?.resourceType || ""),
+    questions: [],
+  };
+
+  if (legacyType === "MOCK") {
+    converted.questions = convertCheckpointQuestions(item.questions || []);
+  }
+
+  return converted;
+}
+
+function convertV2Curriculum(course) {
+  const modules = Array.isArray(course.modules) ? course.modules : [];
+
+  return modules.map((module, moduleIndex) => ({
+    title: String(module.title || "").trim(),
+    description: String(module.description || ""),
+    order: moduleIndex + 1,
+    lessons: [],
+    learningItems: (module.items || []).map((item, itemIndex) => ({
+      ...convertV2Item({
+        ...item,
+        order: itemIndex + 1,
+      }),
+    })),
+  }));
+}
+
+async function publishCourseV2(courseId, userId) {
+  const course = await getCourseV2(courseId, userId);
+
+  if (!course) {
+    const error = new Error("Course not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (course.status === "PUBLISHED") {
+    const error = new Error("Course is already published.");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const title = String(course.title || "").trim();
+  const category = String(course.category || "").trim();
+  const description = String(course.description || "").trim();
+
+  if (!title || !category || !description) {
+    const error = new Error(
+      "Course title, category, and description are required before publishing."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (title.length > 150) {
+    const error = new Error(
+      "Course title must be 150 characters or fewer before publishing."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (description.length > 2000) {
+    const error = new Error(
+      "Course description must be 2,000 characters or fewer before publishing."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const educator = await User.findById(userId).select("name email role");
+
+  if (!educator || educator.role !== "educator") {
+    const error = new Error("Only educators can publish V2 courses.");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const assignments = await BatchEducator.find({
+    educator: userId,
+    status: "active",
+  }).populate({
+    path: "batch",
+    select: "_id name code status",
+  });
+
+  const activeBatches = assignments.filter(
+    (assignment) =>
+      assignment.batch && assignment.batch.status === "active"
+  );
+
+  if (!activeBatches.length) {
+    const error = new Error(
+      "You must be assigned to at least one active batch before publishing a course."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const curriculumModules = convertV2Curriculum(course);
+
+  if (!curriculumModules.length) {
+    const error = new Error(
+      "A course must contain at least one module before publishing."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const instructorName =
+    educator.name ||
+    educator.email ||
+    "JobWay Educator";
+
+  const syllabus = curriculumModules.map((module) => ({
+    title: module.title,
+    description: module.description,
+  }));
+
+  const publishedAt = new Date();
+
+  let studentCourse = await Course.findOne({
+    slug: course.slug,
+  });
+
+  if (studentCourse) {
+    const error = new Error(
+      "A student-facing course already uses this V2 course slug."
+    );
+    error.statusCode = 409;
+    throw error;
+  }
+
+  let slug = slugify(course.slug || course.title) || `course-${Date.now()}`;
+  let counter = 2;
+
+  while (await Course.exists({ slug })) {
+    slug = `${slugify(course.slug || course.title)}-${counter}`;
+    counter += 1;
+  }
+
+  studentCourse = new Course({
+    title,
+    slug,
+    category,
+    level: course.level || "All Levels",
+    description,
+    bannerImage: course.thumbnail || "",
+    duration: "Self Paced",
+    language: course.language || "English",
+    price: 0,
+    discountPrice: 0,
+    instructor: instructorName,
+    features: [],
+    syllabus,
+    curriculum: {
+      modules: curriculumModules,
+      practice: [],
+      sourceFileName: course.source?.fileName || "",
+      generationMode: "v2",
+      detectionMode: "ai",
+      publishedFromDraft: null,
+      publishedAt,
+      sourceImages: [],
+    },
+    isFeatured: false,
+    isPublished: true,
+    isLandingPagePublished: false,
+  });
+
+  await studentCourse.save();
+
+  for (const assignment of activeBatches) {
+    await BatchCourse.updateOne(
+      {
+        batch: assignment.batch._id,
+        course: studentCourse._id,
+      },
+      {
+        $set: {
+          status: "active",
+          assignedAt: publishedAt,
+          assignedBy: userId,
+        },
+        $setOnInsert: {
+          batch: assignment.batch._id,
+          course: studentCourse._id,
+        },
+      },
+      {
+        upsert: true,
+      }
+    );
+  }
+
+  course.status = "PUBLISHED";
+  course.publishedAt = publishedAt;
+
+  await course.save();
+
+  return {
+    course,
+    studentCourse,
+    assignedBatchCount: activeBatches.length,
+  };
+}
+
+module.exports = {
+  createCourseV2,
+  getCourseV2,
+  updateCourseV2,
+  deleteCourseV2,
+  publishCourseV2,
+  normalizeOrders,
+  slugify,
+};

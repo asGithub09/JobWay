@@ -79,8 +79,6 @@ type CourseModule = {
 };
 
 type CoursePracticeQuestion = {
-  id?: string;
-  _id?: string;
   type?: string;
   question?: string;
   options?: string[];
@@ -88,56 +86,6 @@ type CoursePracticeQuestion = {
   explanation?: string;
   sourceSection?: string;
   order?: number;
-};
-
-type StudentCourseCheckpointQuestion = {
-  id?: string;
-  _id?: string;
-  question: string;
-  options: string[];
-  explanation?: string;
-};
-
-type StudentCourseCheckpointResult = {
-  totalQuestions?: number;
-  attempted?: number;
-  correct?: number;
-  incorrect?: number;
-  unanswered?: number;
-  score?: number;
-  percentage?: number;
-  passed?: boolean;
-};
-
-type StudentCourseCheckpointAttempt = {
-  _id?: string;
-  status?: string;
-  answers?: Array<{
-    question: string;
-    selectedAnswer: string;
-  }>;
-  totalQuestions?: number;
-  attempted?: number;
-  correct?: number;
-  incorrect?: number;
-  unanswered?: number;
-  score?: number;
-  percentage?: number;
-  passed?: boolean;
-  submittedAt?: string;
-};
-
-type StudentCourseCheckpoint = {
-  _id?: string;
-  id?: string;
-  title?: string;
-  questions: StudentCourseCheckpointQuestion[];
-};
-
-type SubmitStudentCourseCheckpointResponse = {
-  success?: boolean;
-  message?: string;
-  result?: StudentCourseCheckpointResult;
 };
 
 type CoursePractice = {
@@ -526,13 +474,11 @@ function ModuleNavigation({
 }
 
 function LessonContent({
-  courseId,
   lesson,
   module,
   moduleIndex,
   lessonIndex,
 }: {
-  courseId?: string;
   lesson: CourseLesson;
   module: CourseModule;
   moduleIndex: number;

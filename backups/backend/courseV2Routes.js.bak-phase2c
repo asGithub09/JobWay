@@ -1,0 +1,27 @@
+﻿const express = require("express");
+
+const {
+  authenticateToken,
+  authorizeEducator,
+} = require("../middleware/authMiddleware");
+
+const {
+  create,
+  getOne,
+  update,
+  remove,
+} = require("../controllers/courseV2Controller");
+
+const router = express.Router();
+
+router.use(authenticateToken, authorizeEducator);
+
+router.post("/", create);
+
+router.get("/:id", getOne);
+
+router.patch("/:id", update);
+
+router.delete("/:id", remove);
+
+module.exports = router;

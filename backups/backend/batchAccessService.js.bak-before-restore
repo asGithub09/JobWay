@@ -1,0 +1,114 @@
+async function studentCanAccessCourse(studentId, courseId) {
+  const studentObjectId = toObjectId(studentId);
+  const courseObjectId = toObjectId(courseId);
+
+  if (!studentObjectId || !courseObjectId) {
+    console.warn("[Course Access] Invalid ID", {
+      studentId: studentId
+        ? String(studentId)
+        : null,
+      courseId: courseId
+        ? String(courseId)
+        : null,
+    });
+
+    return {
+      allowed: false,
+      reason: "invalid_id",
+      batch: null,
+      membership: null,
+      assignment: null,
+    };
+  }
+
+  const activeBatch =
+    await getStudentActiveBatch(studentObjectId);
+
+  if (!activeBatch) {
+    console.warn("[Course Access] No active batch", {
+      studentId: String(studentObjectId),
+    });
+
+    return {
+      allowed: false,
+      reason: "no_active_batch",
+      batch: null,
+      membership: null,
+      assignment: null,
+    };
+  }
+
+  const batchId = activeBatch.batch._id;
+
+  console.log("[Course Access] Checking", {
+    studentId: String(studentObjectId),
+    batchId: String(batchId),
+    batchName: activeBatch.batch.name || "",
+    batchCode: activeBatch.batch.code || "",
+    batchStatus:
+      activeBatch.batch.status || "",
+    courseId: String(courseObjectId),
+    membershipId: activeBatch.membership?._id
+      ? String(activeBatch.membership._id)
+      : null,
+    membershipStatus:
+      activeBatch.membership?.status || "",
+  });
+
+  const assignment =
+    await BatchCourse.findOne({
+      batch: batchId,
+      course: courseObjectId,
+      status: "active",
+    }).lean();
+
+  console.log(
+    "[Course Access] Assignment result",
+    assignment
+      ? {
+          assignmentId: String(
+            assignment._id,
+          ),
+          batch: String(
+            assignment.batch,
+          ),
+          course: String(
+            assignment.course,
+          ),
+          status: assignment.status,
+        }
+      : null,
+  );
+
+  if (!assignment) {
+    /*
+     * Do not grant access here.
+     *
+     * A student must have an explicit active
+     * BatchCourse relationship. This prevents
+     * accidentally bypassing JobWay's batch
+     * authorization model.
+     */
+    return {
+      allowed: false,
+      reason: "course_not_assigned",
+      batch: activeBatch.batch,
+      membership: activeBatch.membership,
+      assignment: null,
+    };
+  }
+
+  return {
+    allowed: true,
+    reason: "batch_access",
+    batch: activeBatch.batch,
+    membership: activeBatch.membership,
+    assignment,
+  };
+}
+module.exports = {
+  getStudentActiveBatch,
+  studentCanAccessCourse,
+  getStudentAccessibleCourses,
+  studentCanAccessTestSeries,
+};

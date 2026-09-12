@@ -1,0 +1,385 @@
+const EducatorCourseDraft = require("../models/EducatorCourseDraft");
+const EducatorCourse = require("../models/EducatorCourse");
+
+function serializeDraft(draft) {
+  return {
+    id: draft._id.toString(),
+
+    title: draft.title,
+    category: draft.category,
+    level: draft.level,
+    description: draft.description,
+    duration: draft.duration,
+    language: draft.language,
+
+    features: draft.features || [],
+    modules: draft.modules || [],
+    practice: draft.practice || [],
+    sourceSections: draft.sourceSections || [],
+
+    summary: draft.summary || {},
+
+    sourceFileName: draft.sourceFileName,
+    sourceExtension: draft.sourceExtension,
+    sourceMimeType: draft.sourceMimeType,
+
+    sourceCharacterCount:
+      draft.sourceCharacterCount || 0,
+
+    sourceWordCount:
+      draft.sourceWordCount || 0,
+
+    sourcePageCount:
+      draft.sourcePageCount || 0,
+
+    sourceMetadata:
+      draft.sourceMetadata || {},
+
+    generationMode:
+      draft.generationMode,
+
+    detectionMode:
+      draft.detectionMode,
+
+    status:
+      draft.status,
+
+    errorMessage:
+      draft.errorMessage || "",
+
+    createdAt:
+      draft.createdAt,
+
+    updatedAt:
+      draft.updatedAt,
+  };
+}
+
+async function getDrafts(req, res) {
+  try {
+    const drafts =
+      await EducatorCourseDraft.find({
+        createdBy: req.user.userId,
+      }).sort({
+        updatedAt: -1,
+      });
+
+    return res.json({
+      success: true,
+      drafts: drafts.map(serializeDraft),
+    });
+  } catch (error) {
+    console.error(
+      "Educator get drafts error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to load course drafts.",
+    });
+  }
+}
+
+async function getDraft(req, res) {
+  try {
+    const draft =
+      await EducatorCourseDraft.findOne({
+        _id: req.params.id,
+        createdBy: req.user.userId,
+      });
+
+    if (!draft) {
+      return res.status(404).json({
+        success: false,
+        message: "Course draft not found.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      draft: serializeDraft(draft),
+    });
+  } catch (error) {
+    console.error(
+      "Educator get draft error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to load course draft.",
+    });
+  }
+}
+
+async function updateDraft(req, res) {
+  try {
+    const draft =
+      await EducatorCourseDraft.findOne({
+        _id: req.params.id,
+        createdBy: req.user.userId,
+      });
+
+    if (!draft) {
+      return res.status(404).json({
+        success: false,
+        message: "Course draft not found.",
+      });
+    }
+
+    if (draft.status === "FAILED") {
+      return res.status(409).json({
+        success: false,
+        message:
+          "A failed course draft cannot be edited.",
+      });
+    }
+
+    const allowedFields = [
+      "title",
+      "category",
+      "level",
+      "description",
+      "duration",
+      "language",
+      "features",
+      "modules",
+      "practice",
+      "sourceSections",
+    ];
+
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        draft[field] = req.body[field];
+      }
+    }
+
+    if (
+      req.body.title !== undefined &&
+      !String(req.body.title).trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Course title cannot be empty.",
+      });
+    }
+
+    if (
+      req.body.category !== undefined &&
+      !String(req.body.category).trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Course category cannot be empty.",
+      });
+    }
+
+    draft.status = "READY_FOR_REVIEW";
+    draft.errorMessage = "";
+
+    await draft.save();
+
+    return res.json({
+      success: true,
+      message:
+        "Course draft updated successfully.",
+      draft: serializeDraft(draft),
+    });
+  } catch (error) {
+    console.error(
+      "Educator update draft error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to update course draft.",
+    });
+  }
+}
+
+async function saveDraftAsCourse(
+  req,
+  res
+) {
+  try {
+    const draft =
+      await EducatorCourseDraft.findOne({
+        _id: req.params.id,
+        createdBy: req.user.userId,
+      });
+
+    if (!draft) {
+      return res.status(404).json({
+        success: false,
+        message: "Course draft not found.",
+      });
+    }
+
+    if (
+      draft.status !==
+      "READY_FOR_REVIEW"
+    ) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Only a course draft ready for review can be saved.",
+      });
+    }
+
+    if (!draft.title?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Course title is required.",
+      });
+    }
+
+    if (!draft.category?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Course category is required.",
+      });
+    }
+
+    const baseSlug = String(
+      draft.title
+    )
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    let slug =
+      baseSlug ||
+      `course-${Date.now()}`;
+
+    let counter = 2;
+
+    while (
+      await EducatorCourse.findOne({
+        slug,
+      })
+    ) {
+      slug = `${baseSlug}-${counter}`;
+      counter += 1;
+    }
+
+    const course =
+  await EducatorCourse.create({
+    title: draft.title.trim(),
+
+    slug,
+
+    sourceDraft: draft._id,
+
+    category:
+      draft.category.trim(),
+
+        level:
+          draft.level ||
+          "All Levels",
+
+        description:
+          draft.description || "",
+
+        duration:
+          draft.duration ||
+          "Self Paced",
+
+        language:
+          draft.language ||
+          "English / Hindi",
+
+        features:
+          draft.features || [],
+
+        modules:
+          draft.modules || [],
+
+        status: "DRAFT",
+
+        createdBy:
+          req.user.userId,
+      });
+
+    return res.status(201).json({
+      success: true,
+
+      message:
+        "Course draft saved successfully. You can now review it from your Educator Courses.",
+
+      course: {
+        id: course._id.toString(),
+        title: course.title,
+        slug: course.slug,
+        category: course.category,
+        status: course.status,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Educator save draft as course error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to save course draft.",
+    });
+  }
+}
+
+async function deleteDraft(req, res) {
+  try {
+    const draft =
+      await EducatorCourseDraft.findOne({
+        _id: req.params.id,
+        createdBy: req.user.userId,
+      });
+
+    if (!draft) {
+      return res.status(404).json({
+        success: false,
+        message: "Course draft not found.",
+      });
+    }
+
+    await EducatorCourseDraft.findByIdAndDelete(
+      draft._id
+    );
+
+    return res.json({
+      success: true,
+      message:
+        "Course draft deleted successfully.",
+    });
+  } catch (error) {
+    console.error(
+      "Educator delete draft error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to delete course draft.",
+    });
+  }
+}
+
+module.exports = {
+  getDrafts,
+  getDraft,
+  updateDraft,
+  saveDraftAsCourse,
+  deleteDraft,
+};

@@ -1,0 +1,524 @@
+﻿const mongoose = require("mongoose");
+
+const Course = require("../models/Course");
+const StudentCourseCheckpointAttempt = require("../models/StudentCourseCheckpointAttempt");
+
+const {
+  studentCanAccessCourse,
+} = require("./batchAccessService");
+
+function toObjectId(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof mongoose.Types.ObjectId) {
+    return value;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(value)) {
+    return null;
+  }
+
+  return new mongoose.Types.ObjectId(value);
+}
+
+function createHttpError(message, statusCode, code) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  error.code = code;
+  return error;
+}
+
+function getStudentId(studentId) {
+  const objectId = toObjectId(studentId);
+
+  if (!objectId) {
+    throw createHttpError(
+      "Invalid student ID",
+      401,
+      "AUTHENTICATION_ERROR",
+    );
+  }
+
+  return objectId;
+}
+
+function getCourseId(courseId) {
+  const objectId = toObjectId(courseId);
+
+  if (!objectId) {
+    throw createHttpError(
+      "Invalid course ID",
+      400,
+      "INVALID_COURSE_ID",
+    );
+  }
+
+  return objectId;
+}
+
+function getLearningItemId(learningItemId) {
+  const objectId = toObjectId(learningItemId);
+
+  if (!objectId) {
+    throw createHttpError(
+      "Invalid learning item ID",
+      400,
+      "INVALID_LEARNING_ITEM_ID",
+    );
+  }
+
+  return objectId;
+}
+
+async function getAccessibleCheckpointContext(
+  studentId,
+  courseId,
+  learningItemId,
+) {
+  const studentObjectId = getStudentId(studentId);
+  const courseObjectId = getCourseId(courseId);
+  const learningItemObjectId =
+    getLearningItemId(learningItemId);
+
+  const access =
+    await studentCanAccessCourse(
+      studentObjectId,
+      courseObjectId,
+    );
+
+  if (!access.allowed) {
+    throw createHttpError(
+      "You do not have access to this course.",
+      403,
+      "COURSE_ACCESS_DENIED",
+    );
+  }
+
+  const course =
+    await Course.findOne({
+      _id: courseObjectId,
+      status: "PUBLISHED",
+    }).lean();
+
+  if (!course) {
+    throw createHttpError(
+      "Published course not found.",
+      404,
+      "COURSE_NOT_FOUND",
+    );
+  }
+
+  const modules =
+    course?.curriculum?.modules;
+
+  if (!Array.isArray(modules)) {
+    throw createHttpError(
+      "Course Learning Journey is not available.",
+      404,
+      "CURRICULUM_NOT_FOUND",
+    );
+  }
+
+  let foundModuleIndex = -1;
+  let foundItem = null;
+
+  for (
+    let moduleIndex = 0;
+    moduleIndex < modules.length;
+    moduleIndex += 1
+  ) {
+    const module = modules[moduleIndex];
+
+    if (
+      !module ||
+      !Array.isArray(module.learningItems)
+    ) {
+      continue;
+    }
+
+    const item =
+      module.learningItems.find(
+        (learningItem) =>
+          learningItem &&
+          String(learningItem._id) ===
+            String(learningItemId),
+      );
+
+    if (item) {
+      foundModuleIndex = moduleIndex;
+      foundItem = item;
+      break;
+    }
+  }
+
+  if (!foundItem) {
+    throw createHttpError(
+      "Mock Checkpoint not found in this course.",
+      404,
+      "CHECKPOINT_NOT_FOUND",
+    );
+  }
+
+  if (foundItem.type !== "MOCK") {
+    throw createHttpError(
+      "The selected learning item is not a Mock Checkpoint.",
+      400,
+      "INVALID_CHECKPOINT_TYPE",
+    );
+  }
+
+  if (
+    !Array.isArray(foundItem.questions) ||
+    foundItem.questions.length !== 10
+  ) {
+    throw createHttpError(
+      "This Mock Checkpoint does not contain exactly 10 questions.",
+      409,
+      "INVALID_CHECKPOINT_QUESTIONS",
+    );
+  }
+
+  return {
+    studentObjectId,
+    courseObjectId,
+    learningItemObjectId,
+    course,
+    batch: access.batch || null,
+    moduleIndex: foundModuleIndex,
+    learningItem: foundItem,
+  };
+}
+
+function serializeQuestionForStudent(question) {
+  return {
+    id: question._id,
+    questionText: question.questionText,
+    options: Array.isArray(question.options)
+      ? question.options.map((option) => ({
+          key: option.key,
+          text: option.text,
+        }))
+      : [],
+  };
+}
+
+function serializeAttempt(attempt) {
+  return {
+    id: attempt._id,
+    status: attempt.status,
+    course: attempt.course,
+    batch: attempt.batch,
+    moduleIndex: attempt.moduleIndex,
+    learningItem: attempt.learningItem,
+    questions: attempt.questions.map(
+      serializeQuestionForStudent,
+    ),
+    answers: attempt.answers.map((answer) => ({
+      question: answer.question,
+      selectedAnswer:
+        answer.selectedAnswer || null,
+    })),
+    totalQuestions: attempt.totalQuestions,
+    attemptedQuestions:
+      attempt.attemptedQuestions,
+    correctAnswers: attempt.correctAnswers,
+    incorrectAnswers:
+      attempt.incorrectAnswers,
+    unansweredQuestions:
+      attempt.unansweredQuestions,
+    score: attempt.score,
+    percentage: attempt.percentage,
+    passed: attempt.passed,
+    startedAt: attempt.startedAt,
+    submittedAt: attempt.submittedAt,
+  };
+}
+
+function serializeSubmittedAttempt(attempt) {
+  return {
+    ...serializeAttempt(attempt),
+    questions: attempt.questions.map(
+      (question) => ({
+        id: question._id,
+        questionText: question.questionText,
+        options: question.options,
+        correctAnswer:
+          question.correctAnswer,
+        explanation:
+          question.explanation || "",
+      }),
+    ),
+  };
+}
+
+/**
+ * Get or create the student's current attempt for a
+ * Course Mock Checkpoint.
+ */
+async function getCheckpoint(
+  studentId,
+  courseId,
+  learningItemId,
+) {
+  const context =
+    await getAccessibleCheckpointContext(
+      studentId,
+      courseId,
+      learningItemId,
+    );
+
+  let attempt =
+    await StudentCourseCheckpointAttempt.findOne({
+      student: context.studentObjectId,
+      course: context.courseObjectId,
+      learningItem:
+        context.learningItemObjectId,
+      status: "IN_PROGRESS",
+    }).sort({
+      createdAt: -1,
+    });
+
+  if (!attempt) {
+    const questions =
+      context.learningItem.questions.map(
+        (question) => ({
+          questionText:
+            question.questionText || "",
+          options:
+            Array.isArray(question.options)
+              ? question.options.map(
+                  (option) => ({
+                    key: String(
+                      option.key || "",
+                    ).toUpperCase(),
+                    text:
+                      option.text || "",
+                  }),
+                )
+              : [],
+          correctAnswer:
+            String(
+              question.correctAnswer || "",
+            ).toUpperCase(),
+          explanation:
+            question.explanation || "",
+        }),
+      );
+
+    attempt =
+      await StudentCourseCheckpointAttempt.create(
+        {
+          student:
+            context.studentObjectId,
+          course:
+            context.courseObjectId,
+          batch:
+            context.batch?.batch?._id ||
+            context.batch?._id ||
+            null,
+          moduleIndex:
+            context.moduleIndex,
+          learningItem:
+            context.learningItemObjectId,
+          questions,
+          totalQuestions: 10,
+        },
+      );
+  }
+
+  return {
+    attempt: serializeAttempt(attempt),
+    moduleIndex: context.moduleIndex,
+    learningItem: {
+      id: context.learningItem._id,
+      type: context.learningItem.type,
+      title: context.learningItem.title || "",
+      order: context.learningItem.order ?? 0,
+    },
+  };
+}
+
+/**
+ * Submit one Course Mock Checkpoint attempt.
+ *
+ * Answers must use:
+ *
+ * {
+ *   answers: [
+ *     {
+ *       question: "<snapshot question id>",
+ *       selectedAnswer: "A"
+ *     }
+ *   ]
+ * }
+ */
+async function submitCheckpoint(
+  studentId,
+  courseId,
+  learningItemId,
+  submittedAnswers,
+) {
+  const context =
+    await getAccessibleCheckpointContext(
+      studentId,
+      courseId,
+      learningItemId,
+    );
+
+  if (!Array.isArray(submittedAnswers)) {
+    throw createHttpError(
+      "Answers must be provided as an array.",
+      400,
+      "INVALID_ANSWERS",
+    );
+  }
+
+  const attempt =
+    await StudentCourseCheckpointAttempt.findOne({
+      student: context.studentObjectId,
+      course: context.courseObjectId,
+      learningItem:
+        context.learningItemObjectId,
+      status: "IN_PROGRESS",
+    }).sort({
+      createdAt: -1,
+    });
+
+  if (!attempt) {
+    throw createHttpError(
+      "No active checkpoint attempt was found.",
+      404,
+      "ATTEMPT_NOT_FOUND",
+    );
+  }
+
+  const answerMap = new Map();
+
+  submittedAnswers.forEach((answer) => {
+    if (!answer || !answer.question) {
+      return;
+    }
+
+    const selected =
+      answer.selectedAnswer === null ||
+      answer.selectedAnswer === undefined
+        ? null
+        : String(
+            answer.selectedAnswer,
+          ).toUpperCase();
+
+    if (
+      selected !== null &&
+      !["A", "B", "C", "D"].includes(
+        selected,
+      )
+    ) {
+      throw createHttpError(
+        "Selected answer must be A, B, C or D.",
+        400,
+        "INVALID_SELECTED_ANSWER",
+      );
+    }
+
+    answerMap.set(
+      String(answer.question),
+      selected,
+    );
+  });
+
+  let attemptedQuestions = 0;
+  let correctAnswers = 0;
+  let incorrectAnswers = 0;
+  let unansweredQuestions = 0;
+
+  const answers = attempt.questions.map(
+    (question) => {
+      const questionId =
+        String(question._id);
+
+      const selectedAnswer =
+        answerMap.has(questionId)
+          ? answerMap.get(questionId)
+          : null;
+
+      if (selectedAnswer) {
+        attemptedQuestions += 1;
+
+        if (
+          selectedAnswer ===
+          question.correctAnswer
+        ) {
+          correctAnswers += 1;
+        } else {
+          incorrectAnswers += 1;
+        }
+      } else {
+        unansweredQuestions += 1;
+      }
+
+      return {
+        question: question._id,
+        selectedAnswer,
+      };
+    },
+  );
+
+  const totalQuestions =
+    attempt.questions.length;
+
+  const score = correctAnswers;
+
+  const percentage =
+    totalQuestions > 0
+      ? Number(
+          (
+            (correctAnswers /
+              totalQuestions) *
+            100
+          ).toFixed(2),
+        )
+      : 0;
+
+  /*
+   * No passing percentage was defined for Course Mock
+   * Checkpoints in the current LMS specification.
+   *
+   * Therefore "passed" means the student completed
+   * submission successfully. A future explicit pass
+   * threshold can be added without changing the
+   * question/attempt architecture.
+   */
+  const passed = true;
+
+  attempt.answers = answers;
+  attempt.totalQuestions =
+    totalQuestions;
+  attempt.attemptedQuestions =
+    attemptedQuestions;
+  attempt.correctAnswers =
+    correctAnswers;
+  attempt.incorrectAnswers =
+    incorrectAnswers;
+  attempt.unansweredQuestions =
+    unansweredQuestions;
+  attempt.score = score;
+  attempt.percentage = percentage;
+  attempt.passed = passed;
+  attempt.status = "SUBMITTED";
+  attempt.submittedAt = new Date();
+
+  await attempt.save();
+
+  return {
+    attempt: serializeSubmittedAttempt(
+      attempt,
+    ),
+  };
+}
+
+module.exports = {
+  getCheckpoint,
+  submitCheckpoint,
+};

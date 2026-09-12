@@ -1,0 +1,2601 @@
+﻿"use client";
+
+
+import { request } from "@/lib/api";
+import {
+  ChangeEvent,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  BookOpen,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  GraduationCap,
+  Loader2,
+  Plus,
+  Save,
+  Send,
+  Trash2,
+} from "lucide-react";
+
+import { useAuth } from "@/context/AuthContext";
+
+type EducatorMock = {
+  id: string;
+  title: string;
+  slug: string;
+  durationMinutes?: number;
+  totalQuestions?: number;
+  isPublished?: boolean;
+};
+
+type QuestionBankQuestion = {
+  id: string;
+  questionCode?: string;
+  questionText: string;
+  questionType?: string;
+  options?: unknown[];
+  subject?: string;
+  topic?: string;
+  difficulty?: string;
+  status?: string;
+};
+
+type Lesson = {
+  title: string;
+  description?: string;
+  content?: string;
+  keyPoints?: string[];
+  bullets?: string[];
+  sourceSection?: string;
+  order?: number;
+};
+
+type LearningItem = {
+  type: "AUDIO" | "VIDEO" | "IMAGE" | "RESOURCE" | "PRACTICE" | "MOCK";
+  title?: string;
+  referenceId?: string | null;
+  referenceIds?: string[];
+  content?: string;
+  url?: string;
+  order?: number;
+};
+
+type Module = {
+  title: string;
+  description?: string;
+  lessons?: Lesson[];
+  learningItems?: LearningItem[];
+  order?: number;
+};
+
+type PracticeQuestion = {
+  question?: string;
+  options?: string[];
+  type?: string;
+  sourceSection?: string;
+  order?: number;
+};
+
+type PracticeBlock = {
+  title?: string;
+  type?: string;
+  description?: string;
+  questions?: PracticeQuestion[];
+  order?: number;
+};
+
+type Draft = {
+  id: string;
+  title: string;
+  category: string;
+  level: string;
+  description: string;
+  duration: string;
+  language: string;
+  features: string[];
+  modules: Module[];
+  practice: PracticeBlock[];
+  sourceSections: unknown[];
+  sourceFileName?: string;
+  sourceExtension?: string;
+  sourceMimeType?: string;
+  sourceCharacterCount?: number;
+  sourceWordCount?: number;
+  sourcePageCount?: number;
+  generationMode?: string;
+  detectionMode?: string;
+  status: string;
+};
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Something went wrong.";
+}
+
+export default function ReviewEducatorCoursePage() {
+  const router = useRouter();
+  const params = useParams();
+  const { token } = useAuth();
+
+  const draftId =
+    typeof params?.id === "string"
+      ? params.id
+      : "";
+
+  const [draft, setDraft] =
+    useState<Draft | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [publishing, setPublishing] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
+
+  const [openModules, setOpenModules] =
+    useState<Record<number, boolean>>({});
+
+  const [availableMocks, setAvailableMocks] = useState<EducatorMock[]>([]);
+  const [mockLoading, setMockLoading] = useState(false);
+  const [uploadingLearningMedia, setUploadingLearningMedia] =
+    useState<string | null>(null);
+
+  const [learningMediaUploadError, setLearningMediaUploadError] =
+    useState("");
+  const [mockError, setMockError] = useState("");
+
+  const [questionBank, setQuestionBank] =
+    useState<QuestionBankQuestion[]>([]);
+
+  const [questionBankLoading, setQuestionBankLoading] =
+    useState(false);
+
+  const [questionBankError, setQuestionBankError] =
+    useState("");
+
+  const [questionBankSearch, setQuestionBankSearch] =
+    useState("");
+
+  const [questionPicker, setQuestionPicker] =
+    useState<{
+      moduleIndex: number;
+      itemIndex: number;
+    } | null>(null);
+
+  const loadAvailableMocks = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
+    setMockLoading(true);
+    setMockError("");
+
+    try {
+      const response = await fetch(
+        "/api/educator/mocks/available",
+        {
+          cache: "no-store",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            "Unable to load available Mock Tests.",
+        );
+      }
+
+      setAvailableMocks(data.mocks || []);
+    } catch (err) {
+      setMockError(getErrorMessage(err));
+    } finally {
+      setMockLoading(false);
+    }
+  }, [token]);
+  const loadQuestionBank = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
+    setQuestionBankLoading(true);
+    setQuestionBankError("");
+
+    try {
+      const response = await fetch(
+        "/api/educator/questions?page=1&pageSize=100",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            "Unable to load Question Bank."
+        );
+      }
+
+      setQuestionBank(data.questions || []);
+    } catch (err) {
+      setQuestionBankError(
+        getErrorMessage(err)
+      );
+    } finally {
+      setQuestionBankLoading(false);
+    }
+  }, [token]);
+
+  const loadDraft = useCallback(async () => {
+    if (!token || !draftId) {
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `/api/educator/course-import/drafts/${draftId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            "Unable to load course draft."
+        );
+      }
+
+      setDraft(data.draft);
+
+      const initialOpenState: Record<
+        number,
+        boolean
+      > = {};
+
+      (data.draft.modules || []).forEach(
+        (_module: Module, index: number) => {
+          initialOpenState[index] =
+            index === 0;
+        }
+      );
+
+      setOpenModules(initialOpenState);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [token, draftId]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    loadDraft();
+    loadQuestionBank();
+    loadAvailableMocks();
+  }, [
+    token,
+    loadDraft,
+    loadQuestionBank,
+    loadAvailableMocks,
+  ]);
+
+  const updateDraftField = <
+    K extends keyof Draft
+  >(
+    field: K,
+    value: Draft[K]
+  ) => {
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            [field]: value,
+          }
+        : current
+    );
+  };
+
+  const updateModule = (
+    moduleIndex: number,
+    field: keyof Module,
+    value: string
+  ) => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const modules = [...current.modules];
+
+      modules[moduleIndex] = {
+        ...modules[moduleIndex],
+        [field]: value,
+      };
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const updateLesson = (
+    moduleIndex: number,
+    lessonIndex: number,
+    field: keyof Lesson,
+    value: string
+  ) => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const modules = [...current.modules];
+
+      const lessons = [
+        ...(modules[moduleIndex]
+          .lessons || []),
+      ];
+
+      lessons[lessonIndex] = {
+        ...lessons[lessonIndex],
+        [field]: value,
+      };
+
+      modules[moduleIndex] = {
+        ...modules[moduleIndex],
+        lessons,
+      };
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const addModule = () => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const modules = [
+        ...current.modules,
+        {
+          title: `New Module ${
+            current.modules.length + 1
+          }`,
+          description: "",
+          lessons: [],
+          learningItems: [],
+          order: current.modules.length + 1,
+        },
+      ];
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const removeModule = (
+    moduleIndex: number
+  ) => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const modules =
+        current.modules.filter(
+          (_module, index) =>
+            index !== moduleIndex
+        );
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const addLesson = (
+    moduleIndex: number
+  ) => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const modules = [...current.modules];
+
+      const lessons = [
+        ...(modules[moduleIndex]
+          .lessons || []),
+        {
+          title: "New Lesson",
+          description: "",
+          content: "",
+          keyPoints: [],
+          bullets: [],
+          sourceSection: "",
+          order:
+            (modules[moduleIndex]
+              .lessons?.length || 0) + 1,
+        },
+      ];
+
+      modules[moduleIndex] = {
+        ...modules[moduleIndex],
+        lessons,
+      };
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const removeLesson = (
+    moduleIndex: number,
+    lessonIndex: number
+  ) => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const modules = [...current.modules];
+
+      const lessons = (
+        modules[moduleIndex].lessons || []
+      ).filter(
+        (_lesson, index) =>
+          index !== lessonIndex
+      );
+
+      modules[moduleIndex] = {
+        ...modules[moduleIndex],
+        lessons,
+      };
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const addLearningItem = (
+    moduleIndex: number,
+    type: LearningItem["type"]
+  ) => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const modules = [...current.modules];
+      const module = modules[moduleIndex];
+
+      const learningItems = [
+        ...(module.learningItems || []),
+        {
+          type,
+          title:
+              type === "IMAGE"
+                ? "New Image"
+                : type === "AUDIO"
+                  ? "New Audio"
+                  : type === "VIDEO"
+                    ? "New Video"
+                    : type === "RESOURCE"
+                      ? "New Resource"
+                      : type === "PRACTICE"
+                        ? "Practice"
+                        : "MCQ Checkpoint",
+          referenceId: null,
+          referenceIds: [],
+          content: "",
+          url: "",
+          order:
+            (module.learningItems?.length || 0) + 1,
+        },
+      ];
+
+      modules[moduleIndex] = {
+        ...module,
+        learningItems,
+      };
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const selectQuestionForLearningItem = (
+    questionId: string
+  ) => {
+    if (!questionPicker) {
+      return;
+    }
+
+    const { moduleIndex, itemIndex } = questionPicker;
+
+    setDraft((current) => {
+      if (!current) return current;
+
+      const modules = [...current.modules];
+      const module = modules[moduleIndex];
+
+      if (!module) {
+        return current;
+      }
+
+      const learningItems = [
+        ...(module.learningItems || []),
+      ];
+
+      const item = learningItems[itemIndex];
+
+      if (!item) {
+        return current;
+      }
+
+      const referenceIds = Array.from(
+        new Set([
+          ...(item.referenceIds || []),
+          questionId,
+        ])
+      );
+
+      learningItems[itemIndex] = {
+        ...item,
+        referenceIds,
+      };
+
+      modules[moduleIndex] = {
+        ...module,
+        learningItems,
+      };
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const removeQuestionFromLearningItem = (
+    moduleIndex: number,
+    itemIndex: number,
+    questionId: string
+  ) => {
+    setDraft((current) => {
+      if (!current) return current;
+
+      const modules = [...current.modules];
+      const module = modules[moduleIndex];
+
+      if (!module) {
+        return current;
+      }
+
+      const learningItems = [
+        ...(module.learningItems || []),
+      ];
+
+      const item = learningItems[itemIndex];
+
+      if (!item) {
+        return current;
+      }
+
+      learningItems[itemIndex] = {
+        ...item,
+        referenceIds: (item.referenceIds || []).filter(
+          (id) => id !== questionId
+        ),
+      };
+
+      modules[moduleIndex] = {
+        ...module,
+        learningItems,
+      };
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const getQuestionBankMatches = () => {
+    const search = questionBankSearch
+      .trim()
+      .toLowerCase();
+
+    if (!search) {
+      return questionBank;
+    }
+
+    return questionBank.filter((question) =>
+      [
+        question.questionText,
+        question.questionCode,
+        question.subject,
+        question.topic,
+        question.difficulty,
+      ]
+        .filter(Boolean)
+        .some((value) =>
+          String(value)
+            .toLowerCase()
+            .includes(search)
+        )
+    );
+  };
+
+  const uploadLearningMedia = async (
+    moduleIndex: number,
+    itemIndex: number,
+    type: "IMAGE" | "VIDEO",
+    file: File
+  ) => {
+    if (!token) {
+      setLearningMediaUploadError(
+        "Authentication is required to upload media."
+      );
+      return;
+    }
+
+    const uploadKey = `${moduleIndex}-${itemIndex}`;
+
+    setUploadingLearningMedia(uploadKey);
+    setLearningMediaUploadError("");
+
+    try {
+      const formData = new FormData();
+
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const data = await request<{
+        success: boolean;
+        message?: string;
+        url?: string;
+      }>("/educator/course-import/media", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json().catch(
+        () => null
+      );
+
+      if (!response.ok || !data?.success || !data?.url) {
+        throw new Error(
+          data?.message ||
+            `Unable to upload ${type.toLowerCase()}.`
+        );
+      }
+
+      updateLearningItem(
+        moduleIndex,
+        itemIndex,
+        "url",
+        data.url
+      );
+    } catch (error) {
+      console.error(
+        "Learning media upload error:",
+        error
+      );
+
+      setLearningMediaUploadError(
+        error instanceof Error
+          ? error.message
+          : "Unable to upload media."
+      );
+    } finally {
+      setUploadingLearningMedia(null);
+    }
+  };
+  const updateLearningItem = (
+    moduleIndex: number,
+    itemIndex: number,
+    field: keyof LearningItem,
+    value: string
+  ) => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const modules = [...current.modules];
+      const module = modules[moduleIndex];
+
+      const learningItems = [
+        ...(module.learningItems || []),
+      ];
+
+      learningItems[itemIndex] = {
+        ...learningItems[itemIndex],
+        [field]: value,
+      };
+
+      modules[moduleIndex] = {
+        ...module,
+        learningItems,
+      };
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const removeLearningItem = (
+    moduleIndex: number,
+    itemIndex: number
+  ) => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const modules = [...current.modules];
+      const module = modules[moduleIndex];
+
+      const learningItems = (
+        module.learningItems || []
+      )
+        .filter(
+          (_item, index) => index !== itemIndex
+        )
+        .map((item, index) => ({
+          ...item,
+          order: index + 1,
+        }));
+
+      modules[moduleIndex] = {
+        ...module,
+        learningItems,
+      };
+
+      return {
+        ...current,
+        modules,
+      };
+    });
+  };
+
+  const saveDraft = async () => {
+    if (!draft || !token) {
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(
+        `/api/educator/course-import/drafts/${draft.id}`,
+        {
+          method: "PATCH",
+
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            title: draft.title,
+            category: draft.category,
+            level: draft.level,
+            description: draft.description,
+            duration: draft.duration,
+            language: draft.language,
+            features: draft.features,
+            modules: draft.modules,
+            practice: draft.practice,
+            sourceSections:
+              draft.sourceSections,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            "Unable to save changes."
+        );
+      }
+
+      setDraft(data.draft);
+
+      setSuccess(
+        "Course changes saved successfully."
+      );
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveAsCourse = async () => {
+    if (!draft || !token) {
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const updateResponse = await fetch(
+        `/api/educator/course-import/drafts/${draft.id}`,
+        {
+          method: "PATCH",
+
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            title: draft.title,
+            category: draft.category,
+            level: draft.level,
+            description: draft.description,
+            duration: draft.duration,
+            language: draft.language,
+            features: draft.features,
+            modules: draft.modules,
+            practice: draft.practice,
+            sourceSections:
+              draft.sourceSections,
+          }),
+        }
+      );
+
+      const updateData =
+        await updateResponse.json();
+
+      if (!updateResponse.ok) {
+        throw new Error(
+          updateData?.message ||
+            "Unable to save changes."
+        );
+      }
+
+      const saveResponse = await fetch(
+        `/api/educator/course-import/drafts/${draft.id}/save`,
+        {
+          method: "POST",
+
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const saveData =
+        await saveResponse.json();
+
+      if (!saveResponse.ok) {
+        throw new Error(
+          saveData?.message ||
+            "Unable to save course."
+        );
+      }
+
+      setSuccess(
+        "Course saved as a draft successfully."
+      );
+
+      setTimeout(() => {
+        router.push("/educator/courses");
+      }, 700);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const publishCourse = async () => {
+    if (!draft || !token) {
+      return;
+    }
+
+    setPublishing(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const updateResponse = await fetch(
+        `/api/educator/course-import/drafts/${draft.id}`,
+        {
+          method: "PATCH",
+
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            title: draft.title,
+            category: draft.category,
+            level: draft.level,
+            description: draft.description,
+            duration: draft.duration,
+            language: draft.language,
+            features: draft.features,
+            modules: draft.modules,
+            practice: draft.practice,
+            sourceSections:
+              draft.sourceSections,
+          }),
+        }
+      );
+
+      const updateData =
+        await updateResponse.json();
+
+      if (!updateResponse.ok) {
+        throw new Error(
+          updateData?.message ||
+            "Unable to save changes."
+        );
+      }
+
+      const saveResponse = await fetch(
+        `/api/educator/course-import/drafts/${draft.id}/save`,
+        {
+          method: "POST",
+
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const saveData =
+        await saveResponse.json();
+
+      if (!saveResponse.ok) {
+        throw new Error(
+          saveData?.message ||
+            "Unable to save course."
+        );
+      }
+
+      const courseId =
+        saveData?.course?.id;
+
+      if (!courseId) {
+        throw new Error(
+          "Course was saved but no course ID was returned."
+        );
+      }
+
+      const publishResponse =
+        await fetch(
+          `/api/educator/courses/${courseId}/publish`,
+          {
+            method: "POST",
+
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+      const publishData =
+        await publishResponse.json();
+
+      if (!publishResponse.ok) {
+        throw new Error(
+          publishData?.message ||
+            "Unable to publish course."
+        );
+      }
+
+      setSuccess(
+        "Course published successfully."
+      );
+
+      setTimeout(() => {
+        router.push("/educator/courses");
+      }, 700);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const toggleModule = (
+    index: number
+  ) => {
+    setOpenModules((current) => ({
+      ...current,
+      [index]: !current[index],
+    }));
+  };
+
+  if (!token) {
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-3 text-slate-600">
+          <Loader2
+            className="h-5 w-5 animate-spin"
+            aria-hidden="true"
+          />
+          Loading course review...
+        </div>
+      </main>
+    );
+  }
+
+  if (!draft) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="mx-auto max-w-4xl px-6 py-12">
+          <div className="rounded-3xl border border-red-200 bg-white p-8 shadow-sm">
+            <h1 className="text-xl font-bold text-slate-900">
+              Course draft not found
+            </h1>
+
+            <p className="mt-2 text-sm text-slate-600">
+              {error ||
+                "The requested course draft could not be loaded."}
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
+                  "/educator/courses"
+                )
+              }
+              className="mt-6 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white"
+            >
+              Back to Courses
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        {/* Top navigation */}
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                "/educator/courses"
+              )
+            }
+            className="inline-flex w-fit items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900"
+          >
+            <ArrowLeft
+              className="h-4 w-4"
+              aria-hidden="true"
+            />
+            Back to Courses
+          </button>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={saveDraft}
+              disabled={
+                saving || publishing
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? (
+                <Loader2
+                  className="h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Save
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                />
+              )}
+              Save Changes
+            </button>
+
+            <button
+              type="button"
+              onClick={saveAsCourse}
+              disabled={
+                saving || publishing
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Save
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+              Save Draft
+            </button>
+
+            <button
+              type="button"
+              onClick={publishCourse}
+              disabled={
+                saving || publishing
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {publishing ? (
+                <Loader2
+                  className="h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Send
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                />
+              )}
+              Publish Course
+            </button>
+          </div>
+        </div>
+
+        {/* Messages */}
+        {error && (
+          <div
+            role="alert"
+            className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700"
+          >
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div
+            role="status"
+            className="mb-5 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700"
+          >
+            <CheckCircle2
+              className="h-4 w-4"
+              aria-hidden="true"
+            />
+            {success}
+          </div>
+        )}
+
+        {/* Page title */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white">
+              <GraduationCap
+                className="h-5 w-5"
+                aria-hidden="true"
+              />
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-slate-500">
+                Course Review
+              </p>
+
+              <h1 className="text-2xl font-bold text-slate-900">
+                Review your generated course
+              </h1>
+            </div>
+          </div>
+
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+            Review the generated content below.
+            You can edit the course information,
+            modules and lessons before saving or
+            publishing.
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="space-y-6">
+            {/* Course information */}
+            <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-6 py-5">
+                <h2 className="font-semibold text-slate-900">
+                  Course Information
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Check the basic information before
+                  saving your course.
+                </p>
+              </div>
+
+              <div className="grid gap-5 p-6 sm:grid-cols-2">
+                <Field
+                  label="Course Title"
+                  value={draft.title}
+                  onChange={(event) =>
+                    updateDraftField(
+                      "title",
+                      event.target.value
+                    )
+                  }
+                />
+
+                <Field
+                  label="Category"
+                  value={draft.category}
+                  onChange={(event) =>
+                    updateDraftField(
+                      "category",
+                      event.target.value
+                    )
+                  }
+                />
+
+                <Field
+                  label="Level"
+                  value={draft.level}
+                  onChange={(event) =>
+                    updateDraftField(
+                      "level",
+                      event.target.value
+                    )
+                  }
+                />
+
+                <Field
+                  label="Duration"
+                  value={draft.duration}
+                  onChange={(event) =>
+                    updateDraftField(
+                      "duration",
+                      event.target.value
+                    )
+                  }
+                />
+
+                <Field
+                  label="Language"
+                  value={draft.language}
+                  onChange={(event) =>
+                    updateDraftField(
+                      "language",
+                      event.target.value
+                    )
+                  }
+                />
+
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    Description
+                  </label>
+
+                  <textarea
+                    value={
+                      draft.description || ""
+                    }
+                    onChange={(event) =>
+                      updateDraftField(
+                        "description",
+                        event.target.value
+                      )
+                    }
+                    rows={5}
+                    className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-100"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Modules */}
+            <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="font-semibold text-slate-900">
+                    Course Content
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Review and edit your generated
+                    modules and lessons.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addModule}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  <Plus
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  />
+                  Add Module
+                </button>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {draft.modules.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <BookOpen
+                      className="mx-auto h-8 w-8 text-slate-300"
+                      aria-hidden="true"
+                    />
+
+                    <p className="mt-3 text-sm text-slate-500">
+                      No modules have been generated
+                      yet.
+                    </p>
+                  </div>
+                ) : (
+                  draft.modules.map(
+                    (module, moduleIndex) => {
+                      const isOpen =
+                        openModules[
+                          moduleIndex
+                        ];
+
+                      return (
+                        <div
+                          key={`module-${moduleIndex}`}
+                          className="p-5 sm:p-6"
+                        >
+                          <div className="flex items-start gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                toggleModule(
+                                  moduleIndex
+                                )
+                              }
+                              className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
+                              aria-label={
+                                isOpen
+                                  ? "Collapse module"
+                                  : "Expand module"
+                              }
+                            >
+                              {isOpen ? (
+                                <ChevronUp
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <ChevronDown
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                />
+                              )}
+                            </button>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+                                <div>
+                                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    Module Title
+                                  </label>
+
+                                  <input
+                                    value={
+                                      module.title ||
+                                      ""
+                                    }
+                                    onChange={(
+                                      event
+                                    ) =>
+                                      updateModule(
+                                        moduleIndex,
+                                        "title",
+                                        event.target
+                                          .value
+                                      )
+                                    }
+                                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-100"
+                                  />
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeModule(
+                                      moduleIndex
+                                    )
+                                  }
+                                  className="self-end rounded-xl p-3 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                  aria-label="Delete module"
+                                >
+                                  <Trash2
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                </button>
+                              </div>
+
+                              {isOpen && (
+                                <div className="mt-5 space-y-5">
+                                  <div>
+                                    <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                      Module Description
+                                    </label>
+
+                                    <textarea
+                                      value={
+                                        module.description ||
+                                        ""
+                                      }
+                                      onChange={(
+                                        event
+                                      ) =>
+                                        updateModule(
+                                          moduleIndex,
+                                          "description",
+                                          event.target
+                                            .value
+                                        )
+                                      }
+                                      rows={3}
+                                      className="w-full resize-y rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-100"
+                                    />
+                                  </div>
+
+                                  <div className="rounded-2xl bg-slate-50 p-4">
+                                    <div className="mb-4 flex items-center justify-between gap-3">
+                                      <div>
+                                        <h3 className="text-sm font-semibold text-slate-900">
+                                          Lessons
+                                        </h3>
+
+                                        <p className="mt-1 text-xs text-slate-500">
+                                          {(
+                                            module.lessons ||
+                                            []
+                                          ).length}{" "}
+                                          lesson
+                                          {(
+                                            module.lessons ||
+                                            []
+                                          ).length ===
+                                          1
+                                            ? ""
+                                            : "s"}
+                                        </p>
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          addLesson(
+                                            moduleIndex
+                                          )
+                                        }
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
+                                      >
+                                        <Plus
+                                          className="h-3.5 w-3.5"
+                                          aria-hidden="true"
+                                        />
+                                        Add Lesson
+                                      </button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                      {(
+                                        module.lessons ||
+                                        []
+                                      ).length ===
+                                      0 ? (
+                                        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center text-xs text-slate-500">
+                                          No lessons in
+                                          this module.
+                                        </div>
+                                      ) : (
+                                        (
+                                          module.lessons ||
+                                          []
+                                        ).map(
+                                          (
+                                            lesson,
+                                            lessonIndex
+                                          ) => (
+                                            <div
+                                              key={`lesson-${moduleIndex}-${lessonIndex}`}
+                                              className="rounded-2xl border border-slate-200 bg-white p-5"
+                                            >
+                                              <div className="mb-4 flex items-start justify-between gap-3">
+                                                <div>
+                                                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                    Lesson{" "}
+                                                    {lessonIndex +
+                                                      1}
+                                                  </p>
+
+                                                  <p className="mt-1 text-sm font-semibold text-slate-900">
+                                                    Edit lesson
+                                                    content
+                                                  </p>
+                                                </div>
+
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    removeLesson(
+                                                      moduleIndex,
+                                                      lessonIndex
+                                                    )
+                                                  }
+                                                  className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                                  aria-label="Delete lesson"
+                                                >
+                                                  <Trash2
+                                                    className="h-4 w-4"
+                                                    aria-hidden="true"
+                                                  />
+                                                </button>
+                                              </div>
+
+                                              <div className="space-y-4">
+                                                <Field
+                                                  label="Lesson Title"
+                                                  value={
+                                                    lesson.title ||
+                                                    ""
+                                                  }
+                                                  onChange={(
+                                                    event
+                                                  ) =>
+                                                    updateLesson(
+                                                      moduleIndex,
+                                                      lessonIndex,
+                                                      "title",
+                                                      event
+                                                        .target
+                                                        .value
+                                                    )
+                                                  }
+                                                />
+
+                                                <TextAreaField
+                                                  label="Lesson Description"
+                                                  value={
+                                                    lesson.description ||
+                                                    ""
+                                                  }
+                                                  rows={3}
+                                                  onChange={(
+                                                    event
+                                                  ) =>
+                                                    updateLesson(
+                                                      moduleIndex,
+                                                      lessonIndex,
+                                                      "description",
+                                                      event
+                                                        .target
+                                                        .value
+                                                    )
+                                                  }
+                                                />
+
+                                                <TextAreaField
+                                                  label="Lesson Content"
+                                                  value={
+                                                    lesson.content ||
+                                                    ""
+                                                  }
+                                                  rows={8}
+                                                  onChange={(
+                                                    event
+                                                  ) =>
+                                                    updateLesson(
+                                                      moduleIndex,
+                                                      lessonIndex,
+                                                      "content",
+                                                      event
+                                                        .target
+                                                        .value
+                                                    )
+                                                  }
+                                                />
+
+                                                <TextAreaField
+                                                  label="Key Points"
+                                                  value={(
+                                                    lesson.keyPoints ||
+                                                    []
+                                                  ).join(
+                                                    "\n"
+                                                  )}
+                                                  rows={4}
+                                                  placeholder="One key point per line"
+                                                  onChange={(
+                                                    event
+                                                  ) =>
+                                                    setDraft(
+                                                      (
+                                                        current
+                                                      ) => {
+                                                        if (
+                                                          !current
+                                                        ) {
+                                                          return current;
+                                                        }
+
+                                                        const modules =
+                                                          [
+                                                            ...current.modules,
+                                                          ];
+
+                                                        const lessons =
+                                                          [
+                                                            ...(modules[
+                                                              moduleIndex
+                                                            ]
+                                                              .lessons ||
+                                                              []),
+                                                          ];
+
+                                                        lessons[
+                                                          lessonIndex
+                                                        ] = {
+                                                          ...lessons[
+                                                            lessonIndex
+                                                          ],
+                                                          keyPoints:
+                                                            event.target.value
+                                                              .split(
+                                                                "\n"
+                                                              )
+                                                              .map(
+                                                                (
+                                                                  item
+                                                                ) =>
+                                                                  item.trim()
+                                                              )
+                                                              .filter(
+                                                                Boolean
+                                                              ),
+                                                        };
+
+                                                        modules[
+                                                          moduleIndex
+                                                        ] = {
+                                                          ...modules[
+                                                            moduleIndex
+                                                          ],
+                                                          lessons,
+                                                        };
+
+                                                        return {
+                                                          ...current,
+                                                          modules,
+                                                        };
+                                                      }
+                                                    )
+                                                  }
+                                                />
+
+                                                <TextAreaField
+                                                  label="Additional Bullets"
+                                                  value={(
+                                                    lesson.bullets ||
+                                                    []
+                                                  ).join(
+                                                    "\n"
+                                                  )}
+                                                  rows={4}
+                                                  placeholder="One bullet per line"
+                                                  onChange={(
+                                                    event
+                                                  ) =>
+                                                    setDraft(
+                                                      (
+                                                        current
+                                                      ) => {
+                                                        if (
+                                                          !current
+                                                        ) {
+                                                          return current;
+                                                        }
+
+                                                        const modules =
+                                                          [
+                                                            ...current.modules,
+                                                          ];
+
+                                                        const lessons =
+                                                          [
+                                                            ...(modules[
+                                                              moduleIndex
+                                                            ]
+                                                              .lessons ||
+                                                              []),
+                                                          ];
+
+                                                        lessons[
+                                                          lessonIndex
+                                                        ] = {
+                                                          ...lessons[
+                                                            lessonIndex
+                                                          ],
+                                                          bullets:
+                                                            event.target.value
+                                                              .split(
+                                                                "\n"
+                                                              )
+                                                              .map(
+                                                                (
+                                                                  item
+                                                                ) =>
+                                                                  item.trim()
+                                                              )
+                                                              .filter(
+                                                                Boolean
+                                                              ),
+                                                        };
+
+                                                        modules[
+                                                          moduleIndex
+                                                        ] = {
+                                                          ...modules[
+                                                            moduleIndex
+                                                          ],
+                                                          lessons,
+                                                        };
+
+                                                        return {
+                                                          ...current,
+                                                          modules,
+                                                        };
+                                                      }
+                                                    )
+                                                  }
+                                                />
+                                              </div>
+                                            </div>
+                                          )
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                  )
+                )}
+              </div>
+            </section>
+
+            {/* Learning Journey */}
+            <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-6 py-5">
+                <h2 className="font-semibold text-slate-900">
+                  Learning Journey
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Add supporting learning activities to each module.
+                  These items stay lightweight and do not replace your existing lessons.
+                </p>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {draft.modules.length === 0 ? (
+                  <div className="p-6 text-sm text-slate-500">
+                    Add a module first.
+                  </div>
+                ) : (
+                  draft.modules.map((module, moduleIndex) => {
+                    const items = module.learningItems || [];
+
+                    return (
+                      <div
+                        key={`journey-${moduleIndex}`}
+                        className="p-5 sm:p-6"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                              Module {moduleIndex + 1}
+                            </p>
+                            <h3 className="mt-1 font-semibold text-slate-900">
+                              {module.title || `Module ${moduleIndex + 1}`}
+                            </h3>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {(
+                              [
+                                ["IMAGE", "Image"],
+                                  ["AUDIO", "Audio"],
+                                ["VIDEO", "Video"],
+                                ["RESOURCE", "Resource"],
+                                ["PRACTICE", "Practice"],
+                                ["MOCK", "MCQ Checkpoint"],
+                              ] as const
+                            ).map(([type, label]) => (
+                              <button
+                                key={type}
+                                type="button"
+                                onClick={() =>
+                                  addLearningItem(
+                                    moduleIndex,
+                                    type
+                                  )
+                                }
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                <Plus
+                                  className="h-3.5 w-3.5"
+                                  aria-hidden="true"
+                                />
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 space-y-3">
+                          {items.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-xs text-slate-500">
+                              No additional learning items in this module.
+                            </div>
+                          ) : (
+                            items.map((item, itemIndex) => (
+                              <div
+                                key={`learning-item-${moduleIndex}-${itemIndex}`}
+                                className="rounded-2xl border border-slate-200 bg-white p-4"
+                              >
+                                <div className="mb-4 flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                      {item.type} ? Item {itemIndex + 1}
+                                    </p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                                      Learning activity
+                                    </p>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      removeLearningItem(
+                                        moduleIndex,
+                                        itemIndex
+                                      )
+                                    }
+                                    className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                    aria-label="Delete learning item"
+                                  >
+                                    <Trash2
+                                      className="h-4 w-4"
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                  <Field
+                                    label="Title"
+                                    value={item.title || ""}
+                                    onChange={(event) =>
+                                      updateLearningItem(
+                                        moduleIndex,
+                                        itemIndex,
+                                        "title",
+                                        event.target.value
+                                      )
+                                    }
+                                  />
+
+                                  {item.type === "MOCK" ? (
+                                    <div className="space-y-4">
+  <div>
+    <label className="block text-sm font-semibold text-slate-700">
+      MCQ File
+    </label>
+    <p className="mt-1 text-xs text-slate-500">
+      Upload an Excel file containing exactly 10 MCQs.
+    </p>
+  </div>
+
+  <label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
+    <input
+      type="file"
+      accept=".xlsx,.xls"
+      className="hidden"
+      onChange={(event) => {
+        const file = event.target.files?.[0];
+
+        if (file) {
+          console.log(
+            "MCQ checkpoint file selected:",
+            file.name
+          );
+        }
+
+        event.currentTarget.value = "";
+      }}
+    />
+
+    Upload MCQ File
+  </label>
+</div>
+                                  ) : item.type === "IMAGE" || item.type === "VIDEO" ? (
+                                    <div className="sm:col-span-2 space-y-3">
+                                      <div>
+                                        <label className="block text-sm font-semibold text-slate-700">
+                                          {item.type === "IMAGE" ? "Image File" : "Video File"}
+                                        </label>
+                                        <p className="mt-1 text-xs text-slate-500">
+                                          Upload this {item.type === "IMAGE" ? "image" : "video"} to Cloudinary.
+                                        </p>
+                                      </div>
+
+                                      <label className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
+                                        <input
+                                          type="file"
+                                          accept={item.type === "IMAGE" ? ".jpg,.jpeg,.png,.webp" : ".mp4,.webm,.mov,.m4v"}
+                                          className="hidden"
+                                          disabled={uploadingLearningMedia === `${moduleIndex}-${itemIndex}`}
+                                          onChange={(event) => {
+                                            const file = event.target.files?.[0];
+
+                                            if (file) {
+                                              uploadLearningMedia(
+                                                moduleIndex,
+                                                itemIndex,
+                                                item.type as "IMAGE" | "VIDEO",
+                                                file
+                                              );
+                                            }
+
+                                            event.currentTarget.value = "";
+                                          }}
+                                        />
+                                        {uploadingLearningMedia === `${moduleIndex}-${itemIndex}`
+                                          ? "Uploading..."
+                                          : item.type === "IMAGE"
+                                            ? "Upload Image"
+                                            : "Upload Video"}
+                                      </label>
+
+                                      {item.url && (
+                                        <div className="rounded-lg border border-slate-200 bg-white p-3">
+                                          <p className="text-xs font-medium text-slate-500">
+                                            Uploaded media
+                                          </p>
+                                          <p className="mt-1 break-all text-xs text-slate-600">
+                                            {item.url}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {learningMediaUploadError && (
+                                        <p className="text-sm text-red-600">
+                                          {learningMediaUploadError}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <Field
+                                      label="Resource URL"
+                                      value={item.url || ""}
+                                      onChange={(event) =>
+                                        updateLearningItem(
+                                          moduleIndex,
+                                          itemIndex,
+                                          "url",
+                                          event.target.value
+                                        )
+                                      }
+                                    />
+                                  )}
+
+                                  {item.type === "PRACTICE" && (
+                                    <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                          <p className="text-sm font-semibold text-slate-900">
+                                            Practice Questions
+                                          </p>
+                                          <p className="mt-1 text-xs text-slate-500">
+                                            Add questions from the existing Question Bank.
+                                          </p>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setQuestionPicker({
+                                              moduleIndex,
+                                              itemIndex,
+                                            })
+                                          }
+                                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                                        >
+                                          <Plus className="h-4 w-4" />
+                                          Add from Question Bank
+                                        </button>
+                                      </div>
+
+                                      {(item.referenceIds || []).length > 0 && (
+                                        <div className="mt-4 space-y-2">
+                                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                            Selected Questions
+                                          </p>
+
+                                          {(item.referenceIds || []).map((questionId) => {
+                                            const question = questionBank.find(
+                                              (entry) => entry.id === questionId
+                                            );
+
+                                            return (
+                                              <div
+                                                key={questionId}
+                                                className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3"
+                                              >
+                                                <div className="min-w-0">
+                                                  <p className="text-sm font-medium text-slate-900">
+                                                    {question?.questionText ||
+                                                      "Question from Question Bank"}
+                                                  </p>
+
+                                                  {question?.questionCode && (
+                                                    <p className="mt-1 text-xs text-slate-500">
+                                                      {question.questionCode}
+                                                    </p>
+                                                  )}
+                                                </div>
+
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    removeQuestionFromLearningItem(
+                                                      moduleIndex,
+                                                      itemIndex,
+                                                      questionId
+                                                    )
+                                                  }
+                                                  className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                                                >
+                                                  Remove
+                                                </button>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+
+                                      {questionPicker?.moduleIndex === moduleIndex &&
+                                        questionPicker?.itemIndex === itemIndex && (
+                                          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                            <div className="flex items-center justify-between gap-3">
+                                              <div>
+                                                <h3 className="text-sm font-semibold text-slate-900">
+                                                  Question Bank
+                                                </h3>
+                                                <p className="mt-1 text-xs text-slate-500">
+                                                  Select questions for this practice checkpoint.
+                                                </p>
+                                              </div>
+
+                                              <button
+                                                type="button"
+                                                onClick={() => setQuestionPicker(null)}
+                                                className="rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100"
+                                              >
+                                                Close
+                                              </button>
+                                            </div>
+
+                                            <input
+                                              type="text"
+                                              value={questionBankSearch}
+                                              onChange={(event) =>
+                                                setQuestionBankSearch(event.target.value)
+                                              }
+                                              placeholder="Search question, code, subject or topic..."
+                                              className="mt-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                                            />
+
+                                            {questionBankLoading ? (
+                                              <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Loading Question Bank...
+                                              </div>
+                                            ) : questionBankError ? (
+                                              <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                                                {questionBankError}
+                                              </div>
+                                            ) : (
+                                              <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">
+                                                {getQuestionBankMatches().length === 0 ? (
+                                                  <div className="rounded-xl border border-dashed border-slate-200 p-5 text-center text-sm text-slate-500">
+                                                    No matching questions found.
+                                                  </div>
+                                                ) : (
+                                                  getQuestionBankMatches().map((question) => {
+                                                    const selected =
+                                                      (item.referenceIds || []).includes(
+                                                        question.id
+                                                      );
+
+                                                    return (
+                                                      <button
+                                                        key={question.id}
+                                                        type="button"
+                                                        disabled={selected}
+                                                        onClick={() =>
+                                                          selectQuestionForLearningItem(
+                                                            question.id
+                                                          )
+                                                        }
+                                                        className={
+                                                          selected
+                                                            ? "w-full cursor-default rounded-xl border border-slate-200 bg-slate-50 p-3 text-left opacity-60"
+                                                            : "w-full rounded-xl border border-slate-200 p-3 text-left transition hover:border-slate-400 hover:bg-slate-50"
+                                                        }
+                                                      >
+                                                        <div className="flex items-start justify-between gap-3">
+                                                          <div className="min-w-0">
+                                                            <p className="text-sm font-medium text-slate-900">
+                                                              {question.questionText}
+                                                            </p>
+
+                                                            <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                                                              {question.questionCode && (
+                                                                <span>
+                                                                  {question.questionCode}
+                                                                </span>
+                                                              )}
+
+                                                              {question.subject && (
+                                                                <span>
+                                                                  {question.subject}
+                                                                </span>
+                                                              )}
+
+                                                              {question.topic && (
+                                                                <span>
+                                                                  {question.topic}
+                                                                </span>
+                                                              )}
+
+                                                              {question.difficulty && (
+                                                                <span>
+                                                                  {question.difficulty}
+                                                                </span>
+                                                              )}
+                                                            </div>
+                                                          </div>
+
+                                                          <span className="shrink-0 text-xs font-semibold text-slate-500">
+                                                            {selected ? "Added" : "Add"}
+                                                          </span>
+                                                        </div>
+                                                      </button>
+                                                    );
+                                                  })
+                                                )}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                    </div>
+                                  )}
+
+                                  {(item.type === "AUDIO" ||
+                                    item.type === "VIDEO" ||
+                                    item.type === "RESOURCE" ||
+                                    item.type === "PRACTICE") && (
+                                    <div className="sm:col-span-2">
+                                      <TextAreaField
+                                        label={
+                                          item.type === "PRACTICE"
+                                            ? "Instructions / Content"
+                                            : "Description"
+                                        }
+                                        value={
+                                          item.content || ""
+                                        }
+                                        rows={3}
+                                        onChange={(event) =>
+                                          updateLearningItem(
+                                            moduleIndex,
+                                            itemIndex,
+                                            "content",
+                                            event.target.value
+                                          )
+                                        }
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+
+            {/* Practice */}
+            <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-6 py-5">
+                <h2 className="font-semibold text-slate-900">
+                  Practice Content
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Generated practice content from
+                  the uploaded material.
+                </p>
+              </div>
+
+              <div className="p-6">
+                {draft.practice.length ===
+                0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+                    <p className="text-sm text-slate-500">
+                      No practice questions were
+                      generated from this material.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {draft.practice.map(
+                      (
+                        block,
+                        blockIndex
+                      ) => (
+                        <div
+                          key={`practice-${blockIndex}`}
+                          className="rounded-2xl bg-slate-50 p-5"
+                        >
+                          <h3 className="font-semibold text-slate-900">
+                            {block.title ||
+                              `Practice ${
+                                blockIndex + 1
+                              }`}
+                          </h3>
+
+                          {block.description && (
+                            <p className="mt-2 text-sm text-slate-600">
+                              {block.description}
+                            </p>
+                          )}
+
+                          <div className="mt-4 space-y-3">
+                            {(
+                              block.questions ||
+                              []
+                            ).map(
+                              (
+                                question,
+                                questionIndex
+                              ) => (
+                                <div
+                                  key={`question-${blockIndex}-${questionIndex}`}
+                                  className="rounded-xl border border-slate-200 bg-white p-4"
+                                >
+                                  <p className="text-sm font-medium text-slate-900">
+                                    {questionIndex +
+                                      1}
+                                    .{" "}
+                                    {question.question ||
+                                      "Practice question"}
+                                  </p>
+
+                                  {question.options &&
+                                    question
+                                      .options
+                                      .length >
+                                      0 && (
+                                      <ul className="mt-3 space-y-2">
+                                        {question.options.map(
+                                          (
+                                            option,
+                                            optionIndex
+                                          ) => (
+                                            <li
+                                              key={
+                                                optionIndex
+                                              }
+                                              className="text-xs text-slate-600"
+                                            >
+                                              {String.fromCharCode(
+                                                65 +
+                                                  optionIndex
+                                              )}
+                                              .{" "}
+                                              {
+                                                option
+                                              }
+                                            </li>
+                                          )
+                                        )}
+                                      </ul>
+                                    )}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+
+          {/* Sidebar */}
+          <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100">
+                  <FileText
+                    className="h-5 w-5 text-slate-700"
+                    aria-hidden="true"
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Source Material
+                  </p>
+
+                  <p className="mt-1 truncate text-sm font-semibold text-slate-900">
+                    {draft.sourceFileName ||
+                      "Uploaded material"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-3 border-t border-slate-100 pt-5">
+                <InfoRow
+                  label="Format"
+                  value={
+                    draft.sourceExtension ||
+                    "Unknown"
+                  }
+                />
+
+                <InfoRow
+                  label="Words"
+                  value={String(
+                    draft.sourceWordCount ||
+                      0
+                  )}
+                />
+
+                <InfoRow
+                  label="Characters"
+                  value={String(
+                    draft.sourceCharacterCount ||
+                      0
+                  )}
+                />
+
+                <InfoRow
+                  label="Pages / Sheets"
+                  value={String(
+                    draft.sourcePageCount ||
+                      0
+                  )}
+                />
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Generated Structure
+              </p>
+
+              <div className="mt-4 space-y-3">
+                <InfoRow
+                  label="Modules"
+                  value={String(
+                    draft.modules.length
+                  )}
+                />
+
+                <InfoRow
+                  label="Lessons"
+                  value={String(
+                    draft.modules.reduce(
+                      (total, module) =>
+                        total +
+                        (
+                          module.lessons ||
+                          []
+                        ).length,
+                      0
+                    )
+                  )}
+                />
+
+                <InfoRow
+                  label="Practice Blocks"
+                  value={String(
+                    draft.practice.length
+                  )}
+                />
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-slate-900 p-5 text-white shadow-sm">
+              <CheckCircle2
+                className="h-5 w-5"
+                aria-hidden="true"
+              />
+
+              <h3 className="mt-4 font-semibold">
+                Review before publishing
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                Nothing is published until you
+                choose the Publish Course button.
+              </p>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (
+    event: ChangeEvent<HTMLInputElement>
+  ) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-semibold text-slate-700">
+        {label}
+      </label>
+
+      <input
+        value={value}
+        onChange={onChange}
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-100"
+      />
+    </div>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+  rows = 4,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (
+    event: ChangeEvent<HTMLTextAreaElement>
+  ) => void;
+  rows?: number;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-semibold text-slate-700">
+        {label}
+      </label>
+
+      <textarea
+        value={value}
+        onChange={onChange}
+        rows={rows}
+        placeholder={placeholder}
+        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-100"
+      />
+    </div>
+  );
+}
+
+function InfoRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 text-sm">
+      <span className="text-slate-500">
+        {label}
+      </span>
+
+      <span className="text-right font-medium text-slate-900">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+
+
+
+
+

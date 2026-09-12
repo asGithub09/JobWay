@@ -1,0 +1,178 @@
+﻿const fs = require("fs/promises");
+const crypto = require("crypto");
+const { PNG } = require("pngjs");
+
+const MIN_WIDTH = 60;
+const MIN_HEIGHT = 60;
+const MIN_AREA = 10000;
+
+let pdfjsPromise;
+
+function getPdfJs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = import("pdfjs-dist/legacy/build/pdf.mjs");
+  }
+
+  return pdfjsPromise;
+}
+
+function toPngBuffer(image) {
+  const width = Number(image?.width || 0);
+  const height = Number(image?.height || 0);
+
+  if (!width || !height || !image?.data) {
+    return null;
+  }
+
+  const data = Buffer.from(image.data);
+  const kind = Number(image.kind);
+
+  let colorType;
+
+  // PDF.js ImageKind:
+  // 1 = GRAYSCALE_1BPP
+  // 2 = RGB_24BPP
+  // 3 = RGBA_32BPP
+  if (kind === 2 && data.length === width * height * 3) {
+    colorType = 2;
+  } else if (kind === 3 && data.length === width * height * 4) {
+    colorType = 6;
+  } else {
+    return null;
+  }
+
+  const png = new PNG({
+    width,
+    height,
+    colorType,
+  });
+
+  data.copy(png.data);
+
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+
+    png.pack();
+
+    png.on("data", (chunk) => chunks.push(chunk));
+    png.on("end", () => resolve(Buffer.concat(chunks)));
+    png.on("error", reject);
+  });
+}
+
+function isUsefulImage(image) {
+  const width = Number(image?.width || 0);
+  const height = Number(image?.height || 0);
+
+  return (
+    width >= MIN_WIDTH &&
+    height >= MIN_HEIGHT &&
+    width * height >= MIN_AREA
+  );
+}
+
+function waitForPageObject(page, objectId) {
+  return new Promise((resolve) => {
+    page.objs.get(objectId, resolve);
+  });
+}
+
+async function extractPdfImages(filePath) {
+  const buffer = await fs.readFile(filePath);
+  const pdfjsLib = await getPdfJs();
+
+  const pdf = await pdfjsLib.getDocument({
+    data: new Uint8Array(buffer),
+    useWorkerFetch: false,
+    isEvalSupported: false,
+  }).promise;
+
+  const images = [];
+  const seenHashes = new Set();
+
+  try {
+    for (
+      let pageNumber = 1;
+      pageNumber <= pdf.numPages;
+      pageNumber += 1
+    ) {
+      const page = await pdf.getPage(pageNumber);
+      const operatorList = await page.getOperatorList();
+
+      try {
+        for (
+          let index = 0;
+          index < operatorList.fnArray.length;
+          index += 1
+        ) {
+          const fn = operatorList.fnArray[index];
+
+          const isImageObject =
+            fn === pdfjsLib.OPS.paintImageXObject ||
+            fn === pdfjsLib.OPS.paintInlineImageXObject;
+
+          if (!isImageObject) {
+            continue;
+          }
+
+          const args = operatorList.argsArray[index];
+
+          if (!args) {
+            continue;
+          }
+
+          const objectId = args[0];
+
+          if (typeof objectId !== "string") {
+            continue;
+          }
+
+          const image = await waitForPageObject(
+            page,
+            objectId
+          );
+
+          if (!isUsefulImage(image)) {
+            continue;
+          }
+
+          const pngBuffer = await toPngBuffer(image);
+
+          if (!pngBuffer) {
+            continue;
+          }
+
+          const hash = crypto
+            .createHash("sha256")
+            .update(pngBuffer)
+            .digest("hex");
+
+          if (seenHashes.has(hash)) {
+            continue;
+          }
+
+          seenHashes.add(hash);
+
+          images.push({
+            pageNumber,
+            width: Number(image.width),
+            height: Number(image.height),
+            buffer: pngBuffer,
+            hash,
+            sourceType: "PDF_EMBEDDED_IMAGE",
+          });
+        }
+      } finally {
+        page.cleanup();
+      }
+    }
+
+    return images;
+  } finally {
+    await pdf.destroy();
+  }
+}
+
+module.exports = {
+  extractPdfImages,
+};

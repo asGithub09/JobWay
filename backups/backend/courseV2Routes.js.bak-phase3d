@@ -1,0 +1,38 @@
+﻿const express = require("express");
+const multer = require("multer");
+
+const {
+  authenticateToken,
+  authorizeEducator,
+} = require("../middleware/authMiddleware");
+
+const {
+  create,
+  getOne,
+  update,
+  remove,
+  importDocument,
+} = require("../controllers/courseV2Controller");
+
+const router = express.Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024,
+  },
+});
+
+router.use(authenticateToken, authorizeEducator);
+
+router.post("/ai/import", upload.single("file"), importDocument);
+
+router.post("/", create);
+
+router.get("/:id", getOne);
+
+router.patch("/:id", update);
+
+router.delete("/:id", remove);
+
+module.exports = router;
