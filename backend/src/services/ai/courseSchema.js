@@ -27,6 +27,7 @@ const courseItemSchema = z.object({
     "CHECKPOINT",
   ]),
   title: z.string().default(""),
+  sourcePage: z.number().int().positive().nullable().default(null),
   content: z.string().default(""),
   url: z.string().default(""),
   resourceUrl: z.string().default(""),
@@ -36,6 +37,7 @@ const courseItemSchema = z.object({
 
 const courseModuleSchema = z.object({
   title: z.string(),
+  sourcePage: z.number().int().positive().nullable().default(null),
   description: z.string().default(""),
   items: z.array(courseItemSchema).default([]),
 });
@@ -56,3 +58,5 @@ module.exports = {
   courseModuleSchema,
   extractedCourseSchema,
 };
+
+

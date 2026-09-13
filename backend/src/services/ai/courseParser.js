@@ -1,4 +1,4 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 
 const { GoogleGenAI } = require("@google/genai");
 
@@ -35,6 +35,10 @@ const COURSE_RESPONSE_SCHEMA = {
         properties: {
           title: {
             type: "string",
+          },
+          sourcePage: {
+            type: ["integer", "null"],
+            minimum: 1,
           },
           description: {
             type: "string",
@@ -142,6 +146,83 @@ const COURSE_RESPONSE_SCHEMA = {
   ],
 };
 
+
+const GEMINI_MAX_ATTEMPTS = 4;
+const GEMINI_BASE_DELAY_MS = 1200;
+const GEMINI_MAX_DELAY_MS = 10000;
+
+function isRetryableGeminiError(error) {
+  const status = Number(
+    error?.status ||
+    error?.statusCode ||
+    error?.response?.status ||
+    0
+  );
+
+  const message = String(
+    error?.message ||
+    error?.error?.message ||
+    ""
+  ).toUpperCase();
+
+  return (
+    status === 429 ||
+    status === 500 ||
+    status === 503 ||
+    message.includes("429") ||
+    message.includes("RESOURCE_EXHAUSTED") ||
+    message.includes("503") ||
+    message.includes("UNAVAILABLE") ||
+    message.includes("SERVICE UNAVAILABLE")
+  );
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function generateWithRetry(generateRequest) {
+  let lastError;
+
+  for (
+    let attempt = 1;
+    attempt <= GEMINI_MAX_ATTEMPTS;
+    attempt += 1
+  ) {
+    try {
+      return await generateRequest();
+    } catch (error) {
+      lastError = error;
+
+      if (
+        !isRetryableGeminiError(error) ||
+        attempt >= GEMINI_MAX_ATTEMPTS
+      ) {
+        throw error;
+      }
+
+      const exponentialDelay = Math.min(
+        GEMINI_BASE_DELAY_MS * (2 ** (attempt - 1)),
+        GEMINI_MAX_DELAY_MS
+      );
+
+      const jitter = Math.floor(
+        Math.random() * Math.min(500, exponentialDelay * 0.25)
+      );
+
+      const delay = exponentialDelay + jitter;
+
+      console.warn(
+        `Gemini temporary failure (${error?.status || error?.statusCode || "unknown"}). ` +
+        `Retrying attempt ${attempt + 1}/${GEMINI_MAX_ATTEMPTS} in ${delay}ms.`
+      );
+
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+}
 function ensureConfigured() {
   if (!process.env.GEMINI_API_KEY) {
     const error = new Error("GEMINI_API_KEY is not configured.");
@@ -170,7 +251,7 @@ async function parseCourseDocument({ fileBytes, mimeType, fileName }) {
   });
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await generateWithRetry(() => ai.models.generateContent({
       model: "gemini-flash-latest",
       contents: [
         {
@@ -192,6 +273,14 @@ Rules:
 - Use CHECKPOINT only when the source contains assessment questions.
 - Do not manufacture a checkpoint merely because the document contains educational content.
 - Keep the original meaning and terminology.
+- The supplied document may contain embedded diagrams, charts, screenshots, illustrations, or other meaningful images.
+- When an embedded visual is meaningful to the educational content, create an IMAGE item for it.
+- For every module, set sourcePage to the first PDF page where that module's content begins.
+- For every IMAGE item, set sourcePage to the PDF page containing that visual.
+- Use null for sourcePage when the source page cannot be determined.
+- Do not invent images or image URLs.
+- Do not put placeholder URLs in IMAGE items.
+- The application will attach the actual extracted image files after this response.
 - Return only the requested JSON structure.
               `.trim(),
             },
@@ -208,7 +297,7 @@ Rules:
         responseMimeType: "application/json",
         responseJsonSchema: COURSE_RESPONSE_SCHEMA,
       },
-    });
+    }));
 
     const text = response.text;
 
@@ -256,3 +345,5 @@ Rules:
 module.exports = {
   parseCourseDocument,
 };
+
+

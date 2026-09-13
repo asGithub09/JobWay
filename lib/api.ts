@@ -2,7 +2,7 @@
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:5001/api";
 
-async function request<T>(
+export async function request<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
@@ -4345,4 +4345,187 @@ export async function submitStudentCourseCheckpoint(
     },
   );
 }
+
+/* ============================================================
+ * SKILL ARENA
+ * ============================================================ */
+
+export interface SkillArenaCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  logoUrl?: string;
+  logoPublicId?: string;
+  accent: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SkillArenaCategoriesResponse {
+  success: boolean;
+  categories: SkillArenaCategory[];
+}
+
+export async function getSkillArenaCategories(): Promise<SkillArenaCategoriesResponse> {
+  const token = getAuthToken();
+
+  return request<SkillArenaCategoriesResponse>(
+    "/admin/skill-arena/categories",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
+export async function createSkillArenaCategory(
+  payload: {
+    name: string;
+    slug: string;
+    description?: string;
+    icon?: string;
+    accent?: string;
+    displayOrder?: number;
+    isActive?: boolean;
+  },
+): Promise<{
+  success: boolean;
+  message: string;
+  category: SkillArenaCategory;
+}> {
+  const token = getAuthToken();
+
+  return request<{
+    success: boolean;
+    message: string;
+    category: SkillArenaCategory;
+  }>("/admin/skill-arena/categories", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateSkillArenaCategory(
+  categoryId: string,
+  payload: {
+    name?: string;
+    slug?: string;
+    description?: string;
+    icon?: string;
+    accent?: string;
+    displayOrder?: number;
+    isActive?: boolean;
+  },
+): Promise<{
+  success: boolean;
+  message: string;
+  category: SkillArenaCategory;
+}> {
+  const token = getAuthToken();
+
+  return request<{
+    success: boolean;
+    message: string;
+    category: SkillArenaCategory;
+  }>(
+    `/admin/skill-arena/categories/${encodeURIComponent(categoryId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function deleteSkillArenaCategory(
+  categoryId: string,
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const token = getAuthToken();
+
+  return request<{
+    success: boolean;
+    message: string;
+  }>(
+    `/admin/skill-arena/categories/${encodeURIComponent(categoryId)}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+export async function uploadSkillArenaCategoryLogo(
+  categoryId: string,
+  file: File,
+): Promise<{
+  success: boolean;
+  message: string;
+  logoUrl: string;
+  logoPublicId: string;
+  category: SkillArenaCategory;
+}> {
+  const token = getAuthToken();
+  const formData = new FormData();
+
+  formData.append("image", file);
+
+  return request<{
+    success: boolean;
+    message: string;
+    logoUrl: string;
+    logoPublicId: string;
+    category: SkillArenaCategory;
+  }>(
+    `/admin/skill-arena/categories/${encodeURIComponent(categoryId)}/logo`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    },
+  );
+}
+
+export async function removeSkillArenaCategoryLogo(
+  categoryId: string,
+): Promise<{
+  success: boolean;
+  message: string;
+  category: SkillArenaCategory;
+}> {
+  const token = getAuthToken();
+
+  return request<{
+    success: boolean;
+    message: string;
+    category: SkillArenaCategory;
+  }>(
+    `/admin/skill-arena/categories/${encodeURIComponent(categoryId)}/logo`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+}
+
 

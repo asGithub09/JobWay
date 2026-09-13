@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import "./ai-tech-courses.css";
 import { useState } from "react";
 import {
@@ -154,11 +154,11 @@ export function AiTechCourses() {
   ];
 
   return (
-    <section className="jobway-ai-tech-section">
+    <section className="jobway-ai-tech-section" data-motion="kinetic">
       <div className="jobway-ai-tech-container">
 
         {/* Heading + partnerships */}
-        <div className="jobway-ai-tech-header">
+        <div className="jobway-ai-tech-header" data-motion="reveal">
           <h2 className="jobway-ai-tech-heading">
             <strong>AI Tech Certification &amp; Banking</strong>{" "}
             Jobs Courses
@@ -175,7 +175,7 @@ export function AiTechCourses() {
 
         {/* Course carousel */}
         <div className="jobway-program-carousel">
-          <div className="jobway-program-grid">
+          <div className="jobway-program-grid" data-motion="showcase">
             {visiblePrograms.map((program, index) => (
               <article
                 className="jobway-program-card"
@@ -264,7 +264,7 @@ export function AiTechCourses() {
         </div>
 
         {/* Hiring */}
-        <div className="jobway-hiring">
+        <div className="jobway-hiring" data-motion="reveal">
           <h2>
             Top companies hiring our graduates
           </h2>

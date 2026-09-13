@@ -60,6 +60,16 @@ async function createCourseV2({ createdBy, data = {} }) {
   return course;
 }
 
+async function listCourseV2(userId) {
+  return CourseV2.find({
+    createdBy: userId,
+  })
+    .select(
+      "_id title slug category level language status createdAt updatedAt isLandingPagePublished"
+    )
+    .sort({ updatedAt: -1 })
+    .lean();
+}
 async function getCourseV2(courseId, userId) {
   return CourseV2.findOne({
     _id: courseId,
@@ -239,8 +249,7 @@ function convertV2Curriculum(course) {
     title: String(module.title || "").trim(),
     description: String(module.description || ""),
     order: moduleIndex + 1,
-    lessons: [],
-    learningItems: (module.items || []).map((item, itemIndex) => {
+    lessons: (module.items || []).map((item, itemIndex) => {
       const plainItem =
         item && typeof item.toObject === "function"
           ? item.toObject()
@@ -436,11 +445,14 @@ async function publishCourseV2(courseId, userId) {
 
 module.exports = {
   createCourseV2,
+  listCourseV2,
   getCourseV2,
   updateCourseV2,
   deleteCourseV2,
   publishCourseV2,
   normalizeOrders,
   slugify,
+  convertV2Curriculum,
 };
+
 

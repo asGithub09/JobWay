@@ -11,37 +11,64 @@ import { TrustStats } from "@/components/home/trust-stats";
 import { VernacularBanner } from "@/components/home/vernacular-banner";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import LandingAdvertisement from "@/components/home/landing-advertisement";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div data-motion-page="landing" className="min-h-screen bg-slate-50">
       <SiteHeader />
 
       <main>
-        <HeroSection />
+        <div data-motion="scale">
+          <HeroSection />
+        </div>
 
-        <TrustStats />
+        <section data-motion="reveal">
+          <TrustStats />
+        </section>
 
-        <ExamSelector />
+        <section data-motion="reveal">
+          <ExamSelector />
+        </section>
 
-        <TestPrime />
+        <section data-motion="reveal">
+          <TestPrime />
+        </section>
 
-        <PopularCourses />
+        <section data-motion="scale">
+          <PopularCourses />
+        </section>
 
-        <StudyMaterial />
+        <section data-motion="reveal">
+          <StudyMaterial />
+        </section>
 
-        <FreeResources />
+        <section data-motion="scale">
+          <FreeResources />
+        </section>
 
-        <AiTechCourses />
+        <section data-motion="kinetic" data-motion-pin-section>
+          <AiTechCourses />
+        </section>
 
-        <VernacularBanner />
+        <section data-motion="reveal">
+          <VernacularBanner />
+        </section>
 
-        <AppDownload />
+        <section data-motion="scale">
+          <AppDownload />
+        </section>
 
-        <FAQ />
+        <section data-motion="reveal">
+          <FAQ />
+        </section>
       </main>
 
       <SiteFooter />
+      <LandingAdvertisement />
     </div>
   );
 }
+
+
+

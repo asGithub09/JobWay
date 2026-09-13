@@ -155,17 +155,17 @@ function SidebarItem({
     <Link
       href={href}
       onClick={onClick}
-      className={`group mb-1 flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-all duration-200 ${
+      className={`group mb-1 flex min-h-11 items-center gap-3 rounded-[14px] px-3 py-2.5 text-[13px] font-semibold transition-all duration-200 ${
         active
-          ? "bg-[#E13032] text-white shadow-[0_5px_18px_rgba(225,48,50,0.18)]"
+          ? "bg-[#fff1f1] text-[#d9272e] shadow-none ring-1 ring-inset ring-red-100"
           : "text-slate-600 hover:bg-red-50 hover:text-[#E13032]"
       }`}
     >
       <span
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
           active
-            ? "bg-white/15 text-white"
-            : "bg-slate-50 text-slate-500 group-hover:bg-white group-hover:text-[#E13032]"
+            ? "bg-[#E13032] text-white shadow-sm"
+            : "bg-slate-50 text-slate-500 group-hover:bg-red-50 group-hover:text-[#E13032]"
         }`}
       >
         {icon}
@@ -178,7 +178,7 @@ function SidebarItem({
       <ChevronRight
         className={`h-4 w-4 shrink-0 transition-all duration-200 ${
           active
-            ? "text-white/70"
+            ? "text-[#E13032]/60"
             : "text-slate-300 opacity-0 group-hover:translate-x-0.5 group-hover:text-[#E13032] group-hover:opacity-100"
         }`}
         aria-hidden="true"
@@ -212,13 +212,13 @@ function DashboardSidebar({
           BRAND
          ===================================================== */}
 
-      <div className="flex h-[72px] shrink-0 items-center border-b border-slate-100 px-5">
+      <div className="flex h-[76px] shrink-0 items-center border-b border-slate-100/80 px-5">
         <Link
           href="/"
           onClick={onNavigate}
           className="group flex items-center gap-3"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-[#E13032] transition-transform duration-200 group-hover:scale-105">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#fff1f1] text-[#E13032] ring-1 ring-inset ring-red-100 transition-all duration-200 group-hover:scale-105 group-hover:bg-red-100">
             <GraduationCap
               className="h-5 w-5"
               aria-hidden="true"
@@ -242,9 +242,9 @@ function DashboardSidebar({
          ===================================================== */}
 
       <div className="px-4 pt-5">
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+        <div className="rounded-[18px] border border-slate-200/70 bg-gradient-to-br from-slate-50 to-white p-3 shadow-[0_6px_20px_rgba(15,23,42,0.035)]">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#E13032] shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-white text-[#E13032] shadow-[0_4px_12px_rgba(15,23,42,0.08)] ring-1 ring-slate-100">
               <UserRound
                 className="h-5 w-5"
                 aria-hidden="true"
@@ -270,7 +270,7 @@ function DashboardSidebar({
 
       <nav
         aria-label="Student dashboard navigation"
-        className="mt-5 flex-1 overflow-y-auto px-3 pb-4"
+        className="mt-4 flex-1 overflow-y-auto px-3 pb-4 scrollbar-thin"
       >
         <SidebarSectionLabel>
           Overview
@@ -672,7 +672,7 @@ export default function StudentPortalShell({
           DESKTOP SIDEBAR
          ===================================================== */}
 
-<aside className="fixed bottom-0 left-0 top-[72px] z-30 hidden w-[260px] border-r border-slate-200 bg-white lg:flex">        <DashboardSidebar
+<aside className="fixed bottom-0 left-0 top-[72px] z-30 hidden w-[256px] border-r border-slate-200/80 bg-white lg:flex lg:flex">        <DashboardSidebar
           activeItem={activeItem}
           onNavigate={() => undefined}
           onLogout={handleLogout}
@@ -683,7 +683,7 @@ export default function StudentPortalShell({
           PAGE CONTENT
          ===================================================== */}
 
-      <div className="lg:pl-[260px]">
+      <div className="lg:pl-[256px]">
         {children}
       </div>
     </div>

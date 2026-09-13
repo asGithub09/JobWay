@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+﻿const mongoose = require("mongoose");
 
 const lessonSchema = new mongoose.Schema(
   {
@@ -16,6 +16,29 @@ const lessonSchema = new mongoose.Schema(
       default: "",
     },
 
+    type: {
+      type: String,
+      trim: true,
+      default: "LECTURE",
+    },
+
+    url: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    mediaPublicId: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    mediaResourceType: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     content: {
       type: String,
       trim: true,
@@ -404,3 +427,4 @@ const courseSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("Course", courseSchema);
+

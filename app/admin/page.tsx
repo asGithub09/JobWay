@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 import {
@@ -19,29 +20,739 @@ import {
 } from "lucide-react";
 
 import { AdminBackButton } from "@/components/admin/AdminBackButton";
+import { getLeads, type GetLeadsResponse } from "@/lib/api";
 
-const stats = [
-  {
-    label: "Students",
-    value: "Live",
-    description: "Student management",
-  },
-  {
-    label: "Leads",
-    value: "Live",
-    description: "Lead management",
-  },
-  {
-    label: "Batches",
-    value: "Live",
-    description: "Batch management",
-  },
-  {
-    label: "Courses",
-    value: "Live",
-    description: "Learning management",
-  },
-];
+
+function StudentMarketingAnalytics() {
+  const [data, setData] = useState<GetLeadsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeCard, setActiveCard] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAnalytics() {
+      try {
+        const response = await getLeads({
+          limit: 1000,
+        });
+
+        if (active) {
+          setData(response);
+        }
+      } catch (error) {
+        console.error("Failed to load student marketing analytics:", error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadAnalytics();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const leads = data?.leads ?? [];
+  const stats = data?.stats;
+
+  const contacted = leads.filter(
+    (lead) => lead.status === "contacted"
+  ).length;
+
+  const interested = leads.filter(
+    (lead) => lead.status === "interested"
+  ).length;
+
+  const converted = leads.filter(
+    (lead) => lead.status === "converted"
+  ).length;
+
+  const total = stats?.total ?? data?.pagination?.total ?? leads.length;
+
+  const conversionRate =
+    total > 0 ? Math.round((converted / total) * 100) : 0;
+
+  const contactedRate =
+    total > 0 ? Math.round((contacted / total) * 100) : 0;
+
+  const interestedRate =
+    total > 0 ? Math.round((interested / total) * 100) : 0;
+
+  const convertedRate =
+    total > 0 ? Math.round((converted / total) * 100) : 0;
+
+  const marketingItems = [
+    { label: "Government", value: stats?.government ?? 0 },
+    { label: "Private", value: stats?.private ?? 0 },
+    { label: "Free Courses", value: stats?.freeCourses ?? 0 },
+    { label: "Job Ready Courses", value: stats?.jobReadyCourses ?? 0 },
+    { label: "Mock Tests", value: stats?.mockTests ?? 0 },
+    { label: "Job Updates", value: stats?.jobUpdates ?? 0 },
+  ];
+
+  const maxMarketingValue = Math.max(
+    ...marketingItems.map((item) => item.value),
+    1
+  );
+
+  const cardData = [
+    {
+      id: "contacted",
+      label: "Contacted",
+      value: contacted,
+      subtitle: "Leads reached by the team",
+      accent: "from-sky-500/75 to-indigo-400/70",
+      soft: "bg-sky-50/70",
+      icon: "↗",
+    },
+    {
+      id: "interested",
+      label: "Interested",
+      value: interested,
+      subtitle: "Leads showing active interest",
+      accent: "from-indigo-500/75 to-violet-400/70",
+      soft: "bg-indigo-50/70",
+      icon: "◉",
+    },
+    {
+      id: "converted",
+      label: "Converted",
+      value: converted,
+      subtitle: "Leads converted into students",
+      accent: "from-emerald-500/75 to-teal-400/70",
+      soft: "bg-emerald-50/70",
+      icon: "✓",
+    },
+    {
+      id: "conversion",
+      label: "Conversion Rate",
+      value: `${conversionRate}%`,
+      subtitle: "Converted leads from total pipeline",
+      accent: "from-violet-500/75 to-fuchsia-400/65",
+      soft: "bg-violet-50/70",
+      icon: "%",
+    },
+  ];
+
+  const renderMiniGraph = (id: string) => {
+    if (id === "contacted") {
+      const width = total > 0 ? Math.max(5, contactedRate) : 5;
+
+      return (
+        <div className="mt-3 rounded-xl border border-sky-100/80 bg-white/65 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Pipeline reach
+            </span>
+            <span className="text-[10px] font-black text-indigo-600">
+              {contactedRate}%
+            </span>
+          </div>
+
+          <div className="h-10 overflow-hidden rounded-lg bg-slate-100/80">
+            <div className="flex h-full items-end gap-1 px-2 pb-1">
+              {[35, 52, 42, 66, 58, 76, 88].map((height, index) => (
+                <div
+                  key={index}
+                  className="flex-1 rounded-t-md bg-gradient-to-t from-sky-500/55 to-indigo-400/80"
+                  style={{
+                    height: `${total > 0 ? Math.max(12, height * width / 100) : 12}%`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-2 flex justify-between text-[9px] text-slate-400">
+            <span>Contacted</span>
+            <span>{contacted} of {total} leads</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (id === "interested") {
+      const width = total > 0 ? Math.max(5, interestedRate) : 5;
+
+      return (
+        <div className="mt-3 rounded-xl border border-indigo-100/80 bg-white/65 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Interest signal
+            </span>
+            <span className="text-[10px] font-black text-indigo-600">
+              {interestedRate}%
+            </span>
+          </div>
+
+          <div className="relative h-10 overflow-hidden rounded-lg bg-violet-50/80">
+            <svg
+              viewBox="0 0 240 42"
+              className="h-full w-full"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="interestArea" x1="0" x2="1">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.08" />
+                  <stop offset="100%" stopColor="#d946ef" stopOpacity="0.35" />
+                </linearGradient>
+              </defs>
+
+              <path
+                d={`M0 34 C30 ${31 - width / 8}, 55 ${25 - width / 7}, 82 ${
+                  29 - width / 9
+                } S135 ${16 - width / 8}, 160 ${22 - width / 9} S205 ${
+                  8 - width / 10
+                }, 240 ${13 - width / 10} L240 42 L0 42 Z`}
+                fill="url(#interestArea)"
+              />
+
+              <path
+                d={`M0 34 C30 ${31 - width / 8}, 55 ${25 - width / 7}, 82 ${
+                  29 - width / 9
+                } S135 ${16 - width / 8}, 160 ${22 - width / 9} S205 ${
+                  8 - width / 10
+                }, 240 ${13 - width / 10}`}
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          <div className="mt-2 flex justify-between text-[9px] text-slate-400">
+            <span>Interested</span>
+            <span>{interested} of {total} leads</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (id === "converted") {
+      const width = total > 0 ? Math.max(5, convertedRate) : 5;
+
+      return (
+        <div className="mt-3 rounded-xl border border-emerald-100/80 bg-white/65 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Conversion pipeline
+            </span>
+            <span className="text-[10px] font-black text-emerald-600">
+              {convertedRate}%
+            </span>
+          </div>
+
+          <div className="flex h-10 items-end gap-1.5">
+            {[
+              Math.max(8, contactedRate),
+              Math.max(8, interestedRate),
+              Math.max(8, convertedRate),
+            ].map((height, index) => (
+              <div
+                key={index}
+                className="flex-1 rounded-t-lg bg-gradient-to-t from-emerald-500/55 to-teal-400/80 transition-all duration-500"
+                style={{
+                  height: `${Math.min(100, height)}%`,
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="mt-2 grid grid-cols-3 text-center text-[9px] text-slate-400">
+            <span>Reached</span>
+            <span>Interested</span>
+            <span>Converted</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-3 rounded-xl border border-violet-100/80 bg-white/65 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            Overall efficiency
+          </span>
+          <span className="text-[10px] font-black text-violet-600">
+            {conversionRate}%
+          </span>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div
+            className="relative grid h-14 w-14 shrink-0 place-items-center rounded-full"
+            style={{
+              background: `conic-gradient(#6366f1 ${conversionRate * 3.6}deg, #f1e9f4 0deg)`,
+            }}
+          >
+            <div className="grid h-10 w-10 place-items-center rounded-full bg-white text-xs font-black text-slate-800">
+              {conversionRate}%
+            </div>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex justify-between text-[10px]">
+              <span className="text-slate-500">Converted</span>
+              <span className="font-black text-slate-700">{converted}</span>
+            </div>
+
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-400 transition-all duration-700"
+                style={{
+                  width: `${Math.max(3, conversionRate)}%`,
+                }}
+              />
+            </div>
+
+            <p className="mt-1 text-[9px] text-slate-400">
+              {converted} converted from {total} total leads
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <section className="mb-10">
+      <div
+        className={[
+          "relative overflow-hidden rounded-[28px] border bg-white/65 p-4 shadow-sm backdrop-blur-2xl transition-all duration-500 sm:p-5",
+          activeCard
+            ? "border-indigo-200/70 shadow-[0_18px_55px_rgba(99,102,241,0.12)]"
+            : "border-slate-200/70",
+        ].join(" ")}
+      >
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div
+            className={[
+              "analytics-orb analytics-orb-one absolute -left-20 -top-24 h-64 w-64 rounded-full bg-indigo-200/30 blur-3xl",
+              activeCard ? "opacity-100" : "opacity-70",
+            ].join(" ")}
+          />
+
+          <div
+            className={[
+              "analytics-orb analytics-orb-two absolute -right-24 -top-16 h-60 w-60 rounded-full bg-violet-200/25 blur-3xl",
+              activeCard ? "opacity-100" : "opacity-60",
+            ].join(" ")}
+          />
+
+          <div
+            className={[
+              "analytics-orb analytics-orb-three absolute -bottom-28 left-[38%] h-64 w-64 rounded-full bg-sky-200/25 blur-3xl",
+              activeCard ? "opacity-90" : "opacity-60",
+            ].join(" ")}
+          />
+
+          <div
+            className={[
+              "analytics-orb analytics-orb-four absolute -bottom-24 -right-12 h-52 w-52 rounded-full bg-emerald-200/20 blur-3xl",
+              activeCard ? "opacity-100" : "opacity-55",
+            ].join(" ")}
+          />
+
+          <div className="analytics-wave analytics-wave-one absolute left-[18%] top-4 h-20 w-[42%] rounded-[50%] border-t border-indigo-300/20" />
+          <div className="analytics-wave analytics-wave-two absolute left-[42%] top-8 h-24 w-[36%] rounded-[50%] border-t border-violet-300/20" />
+
+          <div className="analytics-particles absolute inset-0 opacity-40" />
+
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-300/60 to-transparent" />
+        </div>
+
+        <div className="relative">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="mb-1 flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-70" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                </span>
+
+                <span className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-600">
+                  Live intelligence
+                </span>
+              </div>
+
+              <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                Student & Marketing Analytics
+              </h2>
+
+              <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+                Real-time student outreach and marketing demand from the JobWay
+                lead pipeline.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <div className="rounded-full border border-emerald-100 bg-emerald-50/80 px-3 py-1.5 text-[10px] font-black text-emerald-700">
+                ● Live data
+              </div>
+
+              <div
+                className={[
+                  "rounded-full border px-3 py-1.5 text-[10px] font-black transition-all duration-300",
+                  activeCard
+                    ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                    : "border-slate-200 bg-white/70 text-slate-500",
+                ].join(" ")}
+              >
+                {activeCard ? "Viewing insight" : "Hover a metric"}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {cardData.map((card) => {
+              const active = activeCard === card.id;
+
+              return (
+                <div
+                  key={card.id}
+                  className={[
+                    "group relative overflow-hidden rounded-2xl border bg-white/75 p-4 backdrop-blur-xl transition-all duration-400",
+                    active
+                      ? "min-h-[190px] -translate-y-1 border-indigo-200 shadow-[0_14px_35px_rgba(99,102,241,0.14)]"
+                      : "min-h-[118px] border-slate-200/70 shadow-sm hover:-translate-y-0.5 hover:border-slate-300",
+                  ].join(" ")}
+                  onMouseEnter={() => setActiveCard(card.id)}
+                  onMouseLeave={() => setActiveCard(null)}
+                  onClick={() =>
+                    setActiveCard((current) =>
+                      current === card.id ? null : card.id
+                    )
+                  }
+                >
+                  <div
+                    className={[
+                      "pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r opacity-70 transition-all duration-500",
+                      card.accent,
+                      active ? "opacity-100" : "opacity-40",
+                    ].join(" ")}
+                  />
+
+                  <div
+                    className={[
+                      "absolute -right-8 -top-8 h-20 w-20 rounded-full blur-2xl transition-all duration-500",
+                      card.soft,
+                      active ? "scale-150 opacity-100" : "opacity-70",
+                    ].join(" ")}
+                  />
+
+                  <div className="relative flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
+                        {card.label}
+                      </p>
+
+                      {!active && (
+                        <p className="mt-2 text-3xl font-black tracking-tight text-slate-900">
+                          {loading ? "—" : card.value}
+                        </p>
+                      )}
+
+                      {active && (
+                        <div className="mt-1 flex items-end gap-2">
+                          <p className="text-2xl font-black tracking-tight text-slate-900">
+                            {loading ? "—" : card.value}
+                          </p>
+                          <span className="pb-1 text-[9px] font-bold text-violet-500">
+                            detailed view
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      className={[
+                        "grid h-9 w-9 shrink-0 place-items-center rounded-xl border text-xs font-black shadow-sm transition-all duration-300",
+                        card.soft,
+                        active
+                          ? "scale-110 border-white text-indigo-600"
+                          : "border-white/80 text-slate-500",
+                      ].join(" ")}
+                    >
+                      {card.icon}
+                    </div>
+                  </div>
+
+                  {!active && (
+                    <p className="relative mt-1 text-[10px] leading-4 text-slate-400">
+                      {card.subtitle}
+                    </p>
+                  )}
+
+                  {active && renderMiniGraph(card.id)}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex items-center justify-center">
+            <div
+              className={[
+                "rounded-full border px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] transition-all duration-300",
+                activeCard
+                  ? "border-violet-200 bg-violet-50/80 text-indigo-600"
+                  : "border-slate-200 bg-white/60 text-slate-400",
+              ].join(" ")}
+            >
+              {activeCard
+                ? "Move away to minimize"
+                : "Hover any metric to reveal its graph"}
+            </div>
+          </div>
+
+          <div
+            className={[
+              "mt-4 grid gap-4 overflow-hidden transition-all duration-500",
+              activeCard
+                ? "max-h-[420px] opacity-100"
+                : "max-h-[0px] opacity-0",
+            ].join(" ")}
+          >
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+              <div className="rounded-2xl border border-slate-200/70 bg-white/55 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-black text-slate-800">
+                      Lead interest distribution
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-slate-400">
+                      What students are interested in
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[9px] font-black text-indigo-600">
+                    {total} leads
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-5 gap-y-2">
+                  {marketingItems.map((item) => (
+                    <div key={item.label}>
+                      <div className="mb-1 flex justify-between text-[9px]">
+                        <span className="font-semibold text-slate-500">
+                          {item.label}
+                        </span>
+                        <span className="font-black text-slate-700">
+                          {loading ? "—" : item.value}
+                        </span>
+                      </div>
+
+                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-violet-400 transition-all duration-700"
+                          style={{
+                            width: `${Math.max(
+                              3,
+                              Math.round(
+                                (item.value / maxMarketingValue) * 100
+                              )
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200/70 bg-white/55 p-4">
+                <div className="mb-3">
+                  <p className="text-xs font-black text-slate-800">
+                    Student journey
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-slate-400">
+                    Current lead movement across the pipeline
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    {
+                      label: "Contacted",
+                      value: contacted,
+                      percent: contactedRate,
+                      style: "from-sky-400 to-indigo-400",
+                    },
+                    {
+                      label: "Interested",
+                      value: interested,
+                      percent: interestedRate,
+                      style: "from-indigo-400 to-violet-400",
+                    },
+                    {
+                      label: "Converted",
+                      value: converted,
+                      percent: convertedRate,
+                      style: "from-emerald-400 to-teal-400",
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-xl bg-slate-50/80 p-3 text-center"
+                    >
+                      <div className="mx-auto mb-2 flex h-16 items-end justify-center">
+                        <div
+                          className={`w-8 rounded-t-lg bg-gradient-to-t ${item.style}`}
+                          style={{
+                            height: `${Math.max(8, item.percent)}%`,
+                          }}
+                        />
+                      </div>
+
+                      <p className="text-[9px] font-bold text-slate-500">
+                        {item.label}
+                      </p>
+
+                      <p className="mt-0.5 text-sm font-black text-slate-800">
+                        {loading ? "—" : item.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className={[
+            "analytics-glass-border pointer-events-none absolute inset-0 rounded-[28px] transition-opacity duration-500",
+            activeCard ? "opacity-100" : "opacity-0",
+          ].join(" ")}
+        />
+      </div>
+
+      <style jsx>{`
+        .analytics-glass-border {
+          padding: 1.5px;
+          background:
+            linear-gradient(
+              90deg,
+              rgba(99, 102, 241, 0.75),
+              rgba(139, 92, 246, 0.65),
+              rgba(56, 189, 248, 0.7),
+              rgba(16, 185, 129, 0.6),
+              rgba(236, 72, 153, 0.6),
+              rgba(99, 102, 241, 0.75)
+            );
+          background-size: 300% 100%;
+          -webkit-mask:
+            linear-gradient(#fff 0 0) content-box,
+            linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask:
+            linear-gradient(#fff 0 0) content-box,
+            linear-gradient(#fff 0 0);
+          mask-composite: exclude;
+          animation: analytics-border-flow 8s ease-in-out infinite;
+          filter: drop-shadow(0 0 7px rgba(99, 102, 241, 0.16));
+        }
+
+        .analytics-orb {
+          animation: analytics-orb-float 10s ease-in-out infinite;
+          will-change: transform;
+        }
+
+        .analytics-orb-one {
+          animation-delay: -2s;
+        }
+
+        .analytics-orb-two {
+          animation-delay: -5s;
+        }
+
+        .analytics-orb-three {
+          animation-delay: -7s;
+        }
+
+        .analytics-orb-four {
+          animation-delay: -3s;
+        }
+
+        .analytics-wave {
+          transform-origin: center;
+          animation: analytics-wave-drift 9s ease-in-out infinite;
+        }
+
+        .analytics-wave-two {
+          animation-delay: -4s;
+        }
+
+        .analytics-particles {
+          background-image:
+            radial-gradient(circle at 15% 25%, rgba(99, 102, 241, 0.18) 1px, transparent 1.5px),
+            radial-gradient(circle at 65% 18%, rgba(139, 92, 246, 0.15) 1px, transparent 1.5px),
+            radial-gradient(circle at 82% 72%, rgba(56, 189, 248, 0.16) 1px, transparent 1.5px),
+            radial-gradient(circle at 35% 82%, rgba(16, 185, 129, 0.14) 1px, transparent 1.5px);
+          background-size: 90px 90px, 120px 120px, 140px 140px, 110px 110px;
+          animation: analytics-particles-drift 14s linear infinite;
+        }
+
+        @keyframes analytics-border-flow {
+          0%,
+          100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+
+        @keyframes analytics-orb-float {
+          0%,
+          100% {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          33% {
+            transform: translate3d(18px, -10px, 0) scale(1.04);
+          }
+          66% {
+            transform: translate3d(-12px, 14px, 0) scale(0.97);
+          }
+        }
+
+        @keyframes analytics-wave-drift {
+          0%,
+          100% {
+            transform: translateX(-10px) rotate(-2deg);
+            opacity: 0.35;
+          }
+          50% {
+            transform: translateX(24px) rotate(2deg);
+            opacity: 0.65;
+          }
+        }
+
+        @keyframes analytics-particles-drift {
+          from {
+            transform: translate3d(0, 0, 0);
+          }
+          to {
+            transform: translate3d(28px, -18px, 0);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .analytics-glass-border,
+          .analytics-orb,
+          .analytics-wave,
+          .analytics-particles {
+            animation: none;
+          }
+        }
+      `}</style>
+    </section>
+  );
+}
 
 const modules = [
   {
@@ -281,46 +992,8 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </div>
+        <StudentMarketingAnalytics />
 
-        {/* QUICK STATS */}
-        <section className="mb-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="
-                rounded-2xl
-                border
-                border-slate-200
-                bg-white
-                p-5
-                shadow-sm
-                transition
-                hover:-translate-y-0.5
-                hover:shadow-md
-              "
-            >
-              <p
-                className="
-                  text-xs
-                  font-bold
-                  uppercase
-                  tracking-wider
-                  text-slate-400
-                "
-              >
-                {stat.label}
-              </p>
-
-              <p className="mt-2 text-2xl font-black text-slate-950">
-                {stat.value}
-              </p>
-
-              <p className="mt-1 text-xs text-slate-500">
-                {stat.description}
-              </p>
-            </div>
-          ))}
-        </section>
 
         {/* CORE MODULES */}
         <section className="mb-12">
@@ -609,3 +1282,5 @@ export default function AdminDashboardPage() {
     </main>
   );
 }
+
+

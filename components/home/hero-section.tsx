@@ -198,15 +198,15 @@ function TrustBadge({
         className="flex -space-x-1.5"
         aria-hidden="true"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#E13032] text-[9px] font-black text-white">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#2563EB] text-[9px] font-black text-white">
           J
         </span>
 
-        <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-slate-800 text-[9px] font-black text-white">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#52677D] text-[9px] font-black text-white">
           W
         </span>
 
-        <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-orange-400 text-[9px] font-black text-white">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#DB2777] text-[9px] font-black text-white">
           +
         </span>
       </span>
@@ -222,10 +222,10 @@ function PromotionalBanner({
   slide: HeroSlide;
 }) {
   return (
-    <div className="relative w-full animate-[pulse_6s_ease-in-out_infinite]">
+    <div className="relative w-full">
       {/* Soft banner glow */}
       <div
-        className="absolute -inset-6 rounded-[2.5rem] bg-red-100/60 blur-3xl"
+        className="absolute -inset-6 rounded-[2.5rem] bg-[#DCEFF8] blur-3xl"
         aria-hidden="true"
       />
 
@@ -236,8 +236,8 @@ function PromotionalBanner({
           overflow-hidden
           rounded-[1.35rem]
           border
-          border-red-200
-          bg-[#D90000]
+          border-[#A9D9EA]
+          bg-[#2563EB]
           shadow-[0_28px_75px_rgba(15,23,42,0.18)]
           lg:min-h-[265px]
           xl:min-h-[265px]
@@ -256,12 +256,12 @@ function PromotionalBanner({
 
         {/* Decorative circles */}
         <div
-          className="absolute -right-20 -top-24 h-64 w-64 animate-[spin_18s_linear_infinite] rounded-full border-[38px] border-yellow-300/20"
+          className="absolute -right-20 -top-24 h-64 w-64 rounded-full border-[38px] border-[#8BE0EA]/25"
           aria-hidden="true"
         />
 
         <div
-          className="absolute -bottom-28 -left-20 h-56 w-56 animate-[spin_22s_linear_infinite_reverse] rounded-full border-[30px] border-yellow-300/10"
+          className="absolute -bottom-28 -left-20 h-56 w-56 rounded-full border-[30px] border-[#8BE0EA]/15"
           aria-hidden="true"
         />
 
@@ -278,7 +278,7 @@ function PromotionalBanner({
               JOBWAY
             </div>
 
-            <div className="rounded-full border border-yellow-200/60 bg-yellow-300 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-red-950">
+            <div className="rounded-full border border-[#A9E5EB]/70 bg-[#8BE0EA] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-[#164E63]">
               Limited Offer
             </div>
           </div>
@@ -286,14 +286,14 @@ function PromotionalBanner({
           {/* Main content */}
           <div className="grid gap-6 grid-cols-[minmax(0,1fr)_150px] items-center sm:grid-cols-[minmax(0,1fr)_160px]">
             <div className="max-w-[510px]">
-              <p className="text-sm font-black uppercase tracking-[0.2em] text-yellow-200">
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-[#C9F7FA]">
                 Test Prime
               </p>
 
               <h2 className="mt-2 text-[2rem] font-black uppercase leading-[0.88] tracking-[-0.045em] text-white sm:text-[2.9rem] lg:text-[3.1rem] xl:text-[3.2rem]">
                 {slide.bannerTitle}
 
-                <span className="block text-yellow-300">
+                <span className="block text-[#D8FAFC]">
                   {slide.bannerAccent}
                 </span>
               </h2>
@@ -305,16 +305,16 @@ function PromotionalBanner({
             </div>
 
             {/* Price */}
-            <div className="rounded-[1.5rem] border-4 border-white bg-yellow-300 px-3 py-3 text-center shadow-xl lg:px-4 lg:py-4">
-              <p className="text-[10px] font-black uppercase text-red-900">
+            <div className="rounded-[1.5rem] border-4 border-white bg-[#8BE0EA] px-3 py-3 text-center shadow-xl lg:px-4 lg:py-4">
+              <p className="text-[10px] font-black uppercase text-[#164E63]">
                 Now Only
               </p>
 
-              <p className="mt-1 text-[2.65rem] font-black leading-none tracking-tight text-red-700 lg:text-[2.9rem]">
+              <p className="mt-1 text-[2.65rem] font-black leading-none tracking-tight text-[#155E75] lg:text-[2.9rem]">
                 {slide.bannerPrice}
               </p>
 
-              <p className="mt-2 text-xs font-bold text-red-950/50 line-through">
+              <p className="mt-2 text-xs font-bold text-[#164E63]/50 line-through">
                 {slide.bannerOldPrice}
               </p>
             </div>
@@ -323,23 +323,23 @@ function PromotionalBanner({
           {/* Bottom */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-lg bg-black/25 px-3 py-1.5 text-xs font-black text-white">
+              <span className="rounded-lg bg-[#164E63]/20 px-3 py-1.5 text-xs font-black text-white">
                 150,000+ Mock Tests
               </span>
 
-              <span className="rounded-lg bg-black/25 px-3 py-1.5 text-xs font-black text-white">
+              <span className="rounded-lg bg-[#164E63]/20 px-3 py-1.5 text-xs font-black text-white">
                 800+ Exams
               </span>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="rounded-full bg-slate-950 px-4 py-2 text-xs font-black text-white sm:text-sm">
+              <span className="rounded-full bg-[#164E63] px-4 py-2 text-xs font-black text-white sm:text-sm">
                 {slide.bannerValidity}
               </span>
 
               <Link
                 href="/test-series"
-                className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-yellow-300 px-4 text-xs font-black text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-yellow-200 focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2 sm:h-11 sm:px-5 sm:text-sm"
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#8BE0EA] px-4 text-xs font-black text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-[#BDEFF3] focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2 sm:h-11 sm:px-5 sm:text-sm"
               >
                 Buy Now
 
@@ -356,7 +356,7 @@ function PromotionalBanner({
       {/* Active learners */}
       <div className="absolute -bottom-5 -left-5 hidden rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl sm:block">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-[#E13032]">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-[#2563EB]">
             <Users
               className="h-4 w-4"
               aria-hidden={true}
@@ -406,7 +406,7 @@ function HeroStatRow({
   stats: HeroSlide["stats"];
 }) {
   return (
-    <div className="mt-10 w-full rounded-[1.35rem] border border-slate-100 bg-white px-7 py-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:px-9 lg:mt-12 lg:px-12 lg:py-6">
+    <div className="mt-10 w-full rounded-[1.35rem] border border-[#D7E6EF] bg-[#FDFEFF] px-7 py-5 shadow-[0_14px_42px_rgba(47,93,120,0.08)] sm:px-9 lg:mt-12 lg:px-12 lg:py-6">
       <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-4 sm:gap-x-8">
         {stats.map((stat) => {
           const Icon = getStatIcon(stat.icon);
@@ -416,7 +416,7 @@ function HeroStatRow({
               key={`${stat.value}-${stat.label}`}
               className="flex items-center gap-3"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF5FA] text-[#317B96]">
                 <Icon
                   className="h-[18px] w-[18px]"
                   aria-hidden={true}
@@ -424,11 +424,11 @@ function HeroStatRow({
               </span>
 
               <div>
-                <p className="text-base font-black leading-tight text-[#E13032] sm:text-lg">
+                <p className="text-base font-black leading-tight text-[#2563EB] sm:text-lg">
                   {stat.value}
                 </p>
 
-                <p className="mt-0.5 text-xs font-medium leading-5 text-slate-400 sm:text-sm">
+                <p className="mt-0.5 text-xs font-medium leading-5 text-[#638096] sm:text-sm">
                   {stat.label}
                 </p>
               </div>
@@ -529,7 +529,7 @@ export function HeroSection() {
     <section
       aria-roledescription="carousel"
       aria-label="JobWay featured campaigns"
-      className="relative overflow-hidden border-b border-slate-200 bg-white"
+      className="relative overflow-hidden border-b border-[#DCEAF5] bg-[#EEF7FC]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocusCapture={() => setIsPaused(true)}
@@ -547,12 +547,12 @@ export function HeroSection() {
       />
 
       <div
-        className="pointer-events-none absolute -left-40 top-10 h-[420px] w-[420px] rounded-full bg-red-50/70 blur-3xl"
+        className="pointer-events-none absolute -left-40 top-10 h-[420px] w-[420px] rounded-full bg-[#DDF5F7] blur-3xl"
         aria-hidden={true}
       />
 
       <div
-        className="pointer-events-none absolute -right-40 top-0 h-[460px] w-[460px] rounded-full bg-orange-50/60 blur-3xl"
+        className="pointer-events-none absolute -right-40 top-0 h-[460px] w-[460px] rounded-full bg-[#FBE4EE] blur-3xl"
         aria-hidden={true}
       />
 
@@ -563,8 +563,8 @@ export function HeroSection() {
           banner: 480px
           max content width: 1200px
       */}
-      <div className="relative mx-auto w-full max-w-[1200px] px-10">
-        <div className="py-10 sm:py-12 lg:py-[54px]">
+      <div className="relative mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">
+        <div className="py-14 sm:py-16 lg:py-20">
           <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-center lg:gap-[43px]">
             {/* LEFT CONTENT */}
             <div
@@ -574,18 +574,18 @@ export function HeroSection() {
             >
               <TrustBadge label={activeSlide.badge} />
 
-              <p className="mt-5 text-xs font-bold uppercase tracking-[0.12em] text-slate-400 sm:text-sm">
+              <p className="mt-5 text-xs font-bold uppercase tracking-[0.12em] text-[#638096] sm:text-sm">
                 {activeSlide.eyebrow}
               </p>
 
-              <h1 className="mt-3 max-w-[460px] text-balance text-[35.74px] font-bold leading-[42.89px] tracking-normal text-[#121212]">
+              <h1 className="mt-3 max-w-[460px] text-balance text-[35.74px] font-bold leading-[42.89px] tracking-normal text-[#26364A]">
                 {activeSlide.title}
-                <span className="block text-[#E13032]">
+                <span className="block text-[#2563EB]">
                   {activeSlide.highlightedTitle}
                 </span>
               </h1>
 
-              <p className="mt-5 max-w-[460px] text-[15px] leading-[22.5px] text-[#666666]">
+              <p className="mt-5 max-w-[460px] text-[15px] leading-[22.5px] text-[#617086]">
                 {activeSlide.description}
               </p>
 
@@ -595,7 +595,7 @@ export function HeroSection() {
                 role="search"
                 className="mt-6 w-full"
               >
-                <div className="relative flex h-[50px] w-full items-center rounded-full border border-[#ececec] bg-white px-4 shadow-[0_4px_14px_rgba(0,0,0,0.07)] transition focus-within:border-slate-300 focus-within:shadow-[0_5px_18px_rgba(0,0,0,0.09)]">
+                <div className="relative flex h-[50px] w-full items-center rounded-full border border-[#CFE0EC] bg-[#FDFEFF] px-4 shadow-[0_8px_24px_rgba(47,93,120,0.08)] transition focus-within:border-slate-300 focus-within:shadow-[0_5px_18px_rgba(0,0,0,0.09)]">
                   <Search
                     className="pointer-events-none h-5 w-5 shrink-0 text-slate-400"
                     aria-hidden={true}
@@ -609,7 +609,7 @@ export function HeroSection() {
                     }
                     placeholder="Find Live Class, Test Series, Books and Video courses"
                     aria-label="Search JobWay courses, test series and resources"
-                    className="h-full min-w-0 flex-1 bg-transparent px-2 text-[15px] font-normal leading-[22.5px] text-[#121212] outline-none placeholder:text-[#9b9b9b]"
+                    className="h-full min-w-0 flex-1 bg-transparent px-2 text-[15px] font-normal leading-[22.5px] text-[#26364A] outline-none placeholder:text-[#9b9b9b]"
                   />
                 </div>
               </form>
@@ -624,7 +624,7 @@ export function HeroSection() {
                     key={search}
                     type="button"
                     onClick={() => setSearchQuery(search)}
-                    className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-[#e0e0e0] bg-white px-4 text-[12px] font-normal leading-4 text-[#9b9b9b] shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-[#E13032] focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2"
+                    className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-[#CFE0EC] bg-[#F8FCFE] px-4 text-[12px] font-medium leading-4 text-[#718399] shadow-sm transition hover:border-[#A9D9EA] hover:bg-[#FBEAF2] hover:text-[#2563EB] focus-visible:outline-2 focus-visible:outline-[#2563EB] focus-visible:outline-offset-2"
                   >
                     <Search
                       className="h-3.5 w-3.5"
@@ -639,7 +639,7 @@ export function HeroSection() {
               <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href={activeSlide.primaryHref}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#E13032] px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(225,48,50,0.18)] transition hover:-translate-y-0.5 hover:bg-[#C92628] focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(37,99,235,0.20)] transition hover:-translate-y-0.5 hover:bg-[#1D4ED8] focus-visible:outline-2 focus-visible:outline-[#2563EB] focus-visible:outline-offset-2"
                 >
                   {activeSlide.primaryCta}
                   <ArrowRight
@@ -650,7 +650,7 @@ export function HeroSection() {
 
                 <Link
                   href={activeSlide.secondaryHref}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#e0e0e0] bg-white px-5 text-sm font-bold text-[#333333] transition hover:border-red-200 hover:bg-red-50 hover:text-[#E13032] focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#CFE0EC] bg-[#FDFEFF] px-5 text-sm font-bold text-[#3E5268] transition hover:border-[#A9D9EA] hover:bg-[#FBEAF2] hover:text-[#2563EB] focus-visible:outline-2 focus-visible:outline-[#2563EB] focus-visible:outline-offset-2"
                 >
                   {activeSlide.secondaryCta}
                 </Link>
@@ -670,9 +670,9 @@ export function HeroSection() {
                     aria-label={`Show featured campaign ${index + 1}`}
                     aria-current={index === activeIndex}
                     onClick={() => setActiveIndex(index)}
-                    className={`h-1.5 rounded-full transition-all duration-300 focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2 ${
+                    className={`h-1.5 rounded-full transition-all duration-300 focus-visible:outline-2 focus-visible:outline-[#2563EB] focus-visible:outline-offset-2 ${
                       index === activeIndex
-                        ? "w-7 bg-[#E13032]"
+                        ? "w-7 bg-[#2563EB]"
                         : "w-1.5 bg-slate-300 hover:bg-slate-400"
                     }`}
                   />
@@ -685,7 +685,7 @@ export function HeroSection() {
                   type="button"
                   aria-label="Previous featured campaign"
                   onClick={goToPrevious}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-[#E13032] focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#A9D9EA] hover:bg-[#FBEAF2] hover:text-[#2563EB] focus-visible:outline-2 focus-visible:outline-[#2563EB] focus-visible:outline-offset-2"
                 >
                   <ChevronLeft
                     className="h-4 w-4"
@@ -697,7 +697,7 @@ export function HeroSection() {
                   type="button"
                   aria-label="Next featured campaign"
                   onClick={goToNext}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-[#E13032] focus-visible:outline-2 focus-visible:outline-[#E13032] focus-visible:outline-offset-2"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#A9D9EA] hover:bg-[#FBEAF2] hover:text-[#2563EB] focus-visible:outline-2 focus-visible:outline-[#2563EB] focus-visible:outline-offset-2"
                 >
                   <ChevronRight
                     className="h-4 w-4"
@@ -713,7 +713,7 @@ export function HeroSection() {
 
           <div className="mt-6 hidden items-center justify-center gap-2 text-xs font-semibold text-slate-400 lg:flex">
             <Sparkles
-              className="h-3.5 w-3.5 text-[#E13032]"
+              className="h-3.5 w-3.5 text-[#2563EB]"
               aria-hidden={true}
             />
             Trusted learning, practice and career preparation from JobWay

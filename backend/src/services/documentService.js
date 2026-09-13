@@ -1,4 +1,4 @@
-const fs = require("fs/promises");
+﻿const fs = require("fs/promises");
 const path = require("path");
 const mammoth = require("mammoth");
 const { PDFParse } = require("pdf-parse");
@@ -36,7 +36,10 @@ async function extractPdf(filePath) {
   try {
     const result = await parser.getText();
 
-    const text = normalizeText(result.text);
+    // Preserve the PDF parser output as-is.
+    // Do not normalize whitespace here because the PDF content
+    // must remain faithful to the extracted source material.
+    const text = String(result.text || "");
 
     return {
       text,

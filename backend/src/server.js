@@ -1,4 +1,4 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 
 const path = require("path");
 const express = require("express");
@@ -10,6 +10,8 @@ const connectDB = require("./config/db");
 
 const authRoutes = require("./routes/authRoutes");
 const leadRoutes = require("./routes/leadRoutes");
+const advertisementRoutes = require("./routes/advertisementRoutes");
+const skillArenaRoutes = require("./routes/skillArenaRoutes");
 const courseRoutes = require("./routes/courseRoutes");
 const courseMaterialRoutes = require("./routes/courseMaterialRoutes");
 const courseImageRoutes = require("./routes/courseImageRoutes");
@@ -33,6 +35,7 @@ const publicCertificateRoutes = require("./routes/publicCertificateRoutes");
 const facultyRoutes = require("./routes/facultyRoutes");
 
 const educatorCourseRoutes = require("./routes/educatorCourseRoutes");
+const courseV2Routes = require("./routes/courseV2Routes");
 const educatorCourseImportRoutes = require("./routes/educatorCourseImportRoutes");
 const educatorMockRoutes = require("./routes/educatorMockRoutes");
 
@@ -116,6 +119,8 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 
 app.use("/api/leads", leadRoutes);
+app.use("/api/advertisements", advertisementRoutes);
+app.use("/api/admin/skill-arena", skillArenaRoutes);
 
 app.use("/api/courses", courseRoutes);
 
@@ -161,6 +166,11 @@ app.use("/api/faculty", facultyRoutes);
    ========================================================= */
 
 app.use(
+  "/api/courses-v2",
+  courseV2Routes,
+);
+
+app.use(
   "/api/educator/courses",
   educatorCourseRoutes,
 );
@@ -193,7 +203,7 @@ app.use(
   educatorQuestionRoutes,
 );
 /* =========================================================
-   STUDENT — EDUCATOR EMS EXAM ATTEMPTS
+   STUDENT â€” EDUCATOR EMS EXAM ATTEMPTS
    ========================================================= */
 
 app.use(
@@ -211,7 +221,7 @@ app.use(
 );
 
 /*
- * Educator ↔ Batch assignment and educator
+ * Educator â†” Batch assignment and educator
  * batch access.
  *
  * This remains isolated from BatchMember,
@@ -419,3 +429,5 @@ async function startServer() {
 }
 
 startServer();
+
+

@@ -18,7 +18,14 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getMyCourses, type GetMyCoursesResponse } from "@/lib/api";
+import {
+  getMyCourses,
+  getMyTestSeries,
+  getMyMockTestAttempts,
+  type GetMyCoursesResponse,
+  type GetMyTestSeriesResponse,
+  type GetMyMockTestAttemptsResponse,
+} from "@/lib/api";
 
 export default function DashboardPage() {
   const { user, isAuthenticated } = useAuth();
@@ -28,6 +35,10 @@ export default function DashboardPage() {
     useState<GetMyCoursesResponse | null>(null);
   const [learningLoading, setLearningLoading] = useState(true);
   const [learningError, setLearningError] = useState("");
+  const [testSeriesData, setTestSeriesData] =
+    useState<GetMyTestSeriesResponse | null>(null);
+  const [mockAttemptsData, setMockAttemptsData] =
+    useState<GetMyMockTestAttemptsResponse | null>(null);
 
   useEffect(() => {
     setAuthReady(true);

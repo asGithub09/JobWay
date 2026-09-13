@@ -7,6 +7,7 @@ import {
   BookOpen,
   BriefcaseBusiness,
   ClipboardCheck,
+  Swords,
   CreditCard,
   Factory,
   FolderTree,
@@ -109,6 +110,11 @@ const navigation = [
         href: "/admin/exams",
         icon: ClipboardCheck,
       },
+      {
+        label: "Skill Arena ✦",
+        href: "/admin/skill-arena",
+        icon: Swords,
+      },
     ],
   },
 
@@ -143,8 +149,7 @@ const navigation = [
         label: "Advertisements",
         href: "/admin/advertisements",
         icon: PanelTop,
-        comingSoon: true,
-      },
+        },
       {
         label: "Campaigns",
         href: "/admin/campaigns",
@@ -468,3 +473,6 @@ export function AdminSidebar({
     </>
   );
 }
+
+
+

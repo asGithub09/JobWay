@@ -1,4 +1,4 @@
-const cloudinary = require("cloudinary").v2;
+﻿const cloudinary = require("cloudinary").v2;
 
 const isCloudinaryConfigured =
   Boolean(process.env.CLOUDINARY_CLOUD_NAME) &&
@@ -89,6 +89,51 @@ async function uploadCourseMaterial(
   };
 }
 
+async function uploadEducatorCourseMedia(
+  filePath,
+  options = {},
+) {
+  ensureCloudinaryConfigured();
+
+  if (!filePath) {
+    throw new Error("Media file path is required.");
+  }
+
+  const resourceType =
+    options.resourceType === "video"
+      ? "video"
+      : "image";
+
+  const result =
+    await cloudinary.uploader.upload(
+      filePath,
+      {
+        folder:
+          options.folder ||
+          (
+            resourceType === "video"
+              ? "jobway/educator-course-videos"
+              : "jobway/educator-course-images"
+          ),
+        resource_type: resourceType,
+        use_filename: true,
+        unique_filename: true,
+        overwrite: false,
+        type: "upload",
+      },
+    );
+
+  return {
+    publicId: result.public_id,
+    secureUrl: result.secure_url,
+    resourceType: result.resource_type,
+    format: result.format,
+    bytes: result.bytes,
+    width: result.width,
+    height: result.height,
+    duration: result.duration,
+  };
+}
 async function deleteCloudinaryAsset(
   publicId,
   options = {},
@@ -115,5 +160,6 @@ module.exports = {
   ensureCloudinaryConfigured,
   uploadCourseBanner,
   uploadCourseMaterial,
+  uploadEducatorCourseMedia,
   deleteCloudinaryAsset,
 };
